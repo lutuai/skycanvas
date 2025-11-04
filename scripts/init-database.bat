@@ -15,7 +15,7 @@ set /p db_pass=请输入MySQL密码:
 
 echo.
 echo 正在导入数据库...
-mysql -u %db_user% -p%db_pass% < database\schema.sql
+mysql -u %db_user% -p%db_pass% < ..\database\schema.sql
 
 if errorlevel 1 (
     echo ❌ 数据库导入失败
@@ -44,4 +44,3 @@ echo   - tb_like (点赞表)
 echo.
 
 pause
-

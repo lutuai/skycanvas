@@ -14,9 +14,10 @@
 ## 📖 快速导航
 
 - [快速开始](#-快速开始) - 5分钟启动项目
-- [技术栈](#-技术栈) - 技术选型
+- [技术栈](#️-技术栈) - 技术选型
 - [核心功能](#-核心功能) - 已实现功能
 - [项目结构](#-项目结构) - 目录说明
+- [项目状态](#-项目状态) - 完成度报告
 - [文档索引](#-文档索引) - 详细文档
 
 ---
@@ -31,28 +32,163 @@
 - Redis 6.0+
 - Node.js 14+
 
-### 三步启动（Windows）
+### 环境检查
 
 ```bash
-# 1. 初始化数据库
-mysql -u root -p < database\schema.sql
-
-# 2. 启动后端
-cd backend
-mvn spring-boot:run
-
-# 3. 启动前端
-cd frontend
-npm install
-npm run dev:h5  # 或 npm run dev:mp-weixin
+java -version      # 应显示 17.x.x
+mvn -version       # 应显示 3.6+
+mysql --version    # 应显示 8.0+
+redis-server --version
+node -v && npm -v
 ```
 
-**或使用一键脚本**：
-- 双击 `init-database.bat` - 初始化数据库
-- 双击 `start-backend.bat` - 启动后端
-- 双击 `start-frontend.bat` - 启动前端
+### 一键启动（推荐）
 
-📚 **详细教程**: [快速启动指南](QUICKSTART.md)
+**Windows**:
+```bash
+# 双击运行启动菜单
+start.bat
+
+# 或使用具体脚本
+scripts\init-database.bat      # 初始化数据库（首次）
+scripts\start-backend.bat      # 启动后端
+scripts\start-frontend.bat     # 启动前端
+scripts\start-all.bat          # 一键启动前后端
+```
+
+**Linux/Mac**:
+```bash
+# 赋予执行权限（首次）
+chmod +x start.sh scripts/*.sh
+
+# 运行启动菜单
+./start.sh
+
+# 或使用具体脚本
+./scripts/init-database.sh     # 初始化数据库（首次）
+./scripts/start-backend.sh     # 启动后端
+./scripts/start-frontend.sh    # 启动前端
+```
+
+### 分步启动
+
+#### 第一步：初始化数据库（首次运行）
+
+```bash
+# 使用脚本（推荐）
+scripts\init-database.bat  # Windows
+./scripts/init-database.sh # Linux/Mac
+
+# 或手动执行
+mysql -u root -p < database\schema.sql
+```
+
+#### 第二步：启动后端
+
+```bash
+cd backend
+
+# 1. 复制配置文件
+copy src\main\resources\application-dev.yml.example src\main\resources\application-dev.yml
+
+# 2. 编辑配置文件（修改数据库密码等）
+# 修改 src\main\resources\application-dev.yml
+
+# 3. 启动Redis（新窗口）
+redis-server
+
+# 4. 启动后端
+mvn spring-boot:run
+```
+
+✅ 看到以下输出表示成功：
+```
+====================================
+SkyCanvas Backend Started Successfully!
+API地址: http://localhost:8080/api
+====================================
+```
+
+#### 第三步：启动前端
+
+```bash
+cd frontend
+
+# 安装依赖（首次）
+npm install
+
+# H5版（浏览器访问）
+npm run dev:h5
+# 访问: http://localhost:3000
+
+# 小程序版
+npm run dev:mp-weixin
+# 用微信开发者工具导入: frontend\dist\dev\mp-weixin
+```
+
+### 访问地址
+
+| 服务 | 地址 | 说明 |
+|------|------|------|
+| 后端API | http://localhost:8080/api | Spring Boot服务 |
+| H5前端 | http://localhost:3000 | 浏览器访问 |
+| 小程序 | 微信开发者工具 | 导入dist\dev\mp-weixin |
+
+### 最小配置
+
+**后端配置（application-dev.yml）**：
+```yaml
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/skycanvas
+    username: root
+    password: 你的MySQL密码  # ⚠️ 必填
+  
+  redis:
+    host: localhost
+    port: 6379
+    password: ""  # 如果Redis有密码，填写这里
+```
+
+**前端配置（可选）**：
+如需修改API地址，编辑 `frontend\src\utils\request.js`：
+```javascript
+const BASE_URL = 'http://localhost:8080/api'
+```
+
+### ⚠️ 常见问题
+
+**问题1**: `Communications link failure`（数据库连接失败）
+```
+✅ 解决: 
+1. 检查MySQL是否启动
+2. 检查数据库密码是否正确
+3. 验证数据库是否创建成功：
+   mysql -u root -p
+   USE skycanvas;
+   SHOW TABLES;
+```
+
+**问题2**: `Connection refused: connect`（Redis连接失败）
+```
+✅ 解决:
+启动Redis: redis-server
+```
+
+**问题3**: `npm install` 失败
+```
+✅ 解决:
+# 使用国内镜像
+npm install --registry=https://registry.npmmirror.com
+```
+
+**问题4**: 页面空白或报错
+```
+✅ 检查:
+1. 后端是否启动（访问 http://localhost:8080/api）
+2. 浏览器控制台报错信息（F12 - Console）
+3. 网络请求是否正常（F12 - Network）
+```
 
 ---
 
@@ -91,10 +227,6 @@ npm run dev:h5  # 或 npm run dev:mp-weixin
 | 社区分享 | ⚠️ 30% | 数据库设计完成 |
 | 微信支付 | ⚠️ 60% | 框架完成，待集成 |
 
-**完成度**: 85% - MVP已完成，可开始集成测试
-
-📊 **详细状态**: [项目状态报告](PROJECT_STATUS.md)
-
 ---
 
 ## 📁 项目结构
@@ -107,6 +239,12 @@ SkyCanvas/
 │   │       ├── controller/  # 控制器
 │   │       ├── service/     # 服务层
 │   │       ├── entity/      # 实体类
+│   │       ├── mapper/      # MyBatis Mapper
+│   │       ├── dto/         # 数据传输对象
+│   │       ├── config/      # 配置类
+│   │       ├── interceptor/ # 拦截器
+│   │       ├── exception/   # 异常处理
+│   │       ├── utils/       # 工具类
 │   │       └── video/       # 视频生成服务（核心）
 │   └── pom.xml
 │
@@ -118,36 +256,28 @@ SkyCanvas/
 │   │   └── utils/          # 工具函数
 │   └── package.json
 │
+├── scripts/                # 启动脚本
+│   ├── start-all.bat        # Windows: 一键启动
+│   ├── start-backend.bat    # Windows: 启动后端
+│   ├── start-frontend.bat   # Windows: 启动前端
+│   ├── init-database.bat    # Windows: 初始化数据库
+│   ├── start-backend.sh     # Linux/Mac: 启动后端
+│   ├── start-frontend.sh    # Linux/Mac: 启动前端
+│   └── init-database.sh     # Linux/Mac: 初始化数据库
+│
 ├── database/               # 数据库脚本
 │   └── schema.sql          # 建表SQL（9张表）
 │
 ├── docs/                   # 项目文档
 │   ├── API.md              # API文档
 │   ├── DATABASE.md         # 数据库设计
-│   └── DEPLOY.md           # 部署指南
+│   ├── DEPLOY.md           # 部署指南
+│   └── DEVELOPMENT.md      # 开发指南
 │
-├── QUICKSTART.md           # 快速启动指南
-├── PROJECT_STATUS.md       # 项目状态报告
+├── start.bat               # Windows快捷启动菜单
+├── start.sh                # Linux/Mac快捷启动菜单
 └── README.md               # 本文件
 ```
-
----
-
-## 📚 文档索引
-
-### 新手入门
-- [快速启动指南](QUICKSTART.md) - 5分钟启动项目
-- [后端README](backend/README.md) - 后端开发指南
-- [前端README](frontend/README.md) - 前端开发指南
-
-### 开发文档
-- [API文档](docs/API.md) - 接口说明（15+接口）
-- [数据库设计](docs/DATABASE.md) - 表结构（9张表）
-- [部署文档](docs/DEPLOY.md) - 本地/生产部署
-
-### 项目管理
-- [项目状态报告](PROJECT_STATUS.md) - 完成度 + 下一步计划
-- [JDK升级说明](docs/JDK_UPGRADE.md) - JDK 11→17升级指南
 
 ---
 
@@ -179,26 +309,81 @@ video:
 
 ---
 
-## 🎯 开发路线图
+## 📊 项目状态
 
-### ✅ 已完成（85%）
-- [x] 基础架构搭建
-- [x] 用户认证系统
-- [x] 积分系统
+### 总体完成度：85%
+
+**当前状态**: ✅ **MVP已完成，可开始集成测试**
+
+### 已完成（100%）
+
+#### 后端服务
+- [x] Spring Boot项目架构
+- [x] 微信登录 + JWT认证
+- [x] 积分系统（充值/消费/退款）
 - [x] 视频任务管理
+- [x] Provider架构设计
+- [x] 数据库设计（9个表）
+
+#### 前端应用
+- [x] uni-app跨端架构
 - [x] 7个核心页面
-- [x] 完整文档
+- [x] Pinia状态管理
+- [x] 网络请求封装
+- [x] 暗黑主题UI
 
-### 🚧 进行中
-- [ ] Sora API集成（需API密钥）
-- [ ] 微信支付集成（需商户号）
-- [ ] 阿里云OSS集成
+#### 文档系统
+- [x] API文档
+- [x] 数据库文档
+- [x] 部署文档
+- [x] 开发指南
 
-### 📅 计划中
-- [ ] 作品管理完善
-- [ ] 社区功能开发
-- [ ] 性能优化
-- [ ] 单元测试
+### 待完善
+
+| 模块 | 完成度 | 说明 |
+|------|--------|------|
+| 微信支付 | 60% | 框架完成，需实现API |
+| AI视频服务 | 70% | 需要API密钥测试 |
+| 阿里云OSS | 50% | 配置完成，Service待实现 |
+| 作品管理 | 40% | 实体完成，Service待实现 |
+| 社区功能 | 30% | 实体完成，Service待实现 |
+
+### 下一步计划
+
+#### 短期（1-2周）
+1. 集成实际Sora API
+2. 完善微信支付
+3. 阿里云OSS集成
+
+#### 中期（3-4周）
+1. 作品管理完善
+2. 社区功能开发
+3. 性能优化
+
+---
+
+## 📚 文档索引
+
+### 开发文档
+- [开发指南](docs/DEVELOPMENT.md) - 前后端开发详细说明
+- [API文档](docs/API.md) - 接口说明（15+接口）
+- [数据库设计](docs/DATABASE.md) - 表结构（9张表）
+
+### 部署文档
+- [部署文档](docs/DEPLOY.md) - 本地/生产部署
+
+### 脚本说明
+
+**Windows用户**：
+- `scripts\init-database.bat` - 初始化数据库
+- `scripts\start-backend.bat` - 启动后端
+- `scripts\start-frontend.bat` - 启动前端（选择H5或小程序）
+- `scripts\start-all.bat` - 一键启动前后端
+
+**Linux/Mac用户**：
+- `./scripts/init-database.sh` - 初始化数据库
+- `./scripts/start-backend.sh` - 启动后端
+- `./scripts/start-frontend.sh` - 启动前端（选择H5或小程序）
 
 ---
 
@@ -228,19 +413,13 @@ video:
 
 ### 遇到问题？
 
-1. 查看 [快速启动指南](QUICKSTART.md) 的常见问题章节
-2. 查看对应模块的README
-3. 检查日志文件
-
-### 文档快速查找
-
 | 问题类型 | 查看文档 |
 |---------|---------|
-| 启动失败 | [QUICKSTART.md](QUICKSTART.md) |
+| 启动失败 | 本文档"快速开始"章节 |
 | API调用 | [API.md](docs/API.md) |
 | 数据库 | [DATABASE.md](docs/DATABASE.md) |
 | 部署 | [DEPLOY.md](docs/DEPLOY.md) |
-| 完成度 | [PROJECT_STATUS.md](PROJECT_STATUS.md) |
+| 开发 | [DEVELOPMENT.md](docs/DEVELOPMENT.md) |
 
 ---
 
@@ -260,4 +439,4 @@ SkyCanvas是一个**架构清晰、文档完善、可快速迭代**的AI视频�
 - 📚 完整的开发文档
 - 🚀 开箱即用的启动脚本
 
-**立即开始**: 查看 [快速启动指南](QUICKSTART.md) 👈
+**立即开始**: 查看上方 [快速开始](#-快速开始) 章节 👆

@@ -2,7 +2,7 @@
   <view class="container">
     <!-- 用户信息卡片 -->
     <view class="user-card">
-      <view class="user-info">
+      <view class="user-info" @click="goEditProfile">
         <image 
           :src="userInfo?.avatar || '/static/default-avatar.png'" 
           class="avatar"
@@ -13,6 +13,7 @@
             <text>已生成 {{ userInfo?.totalVideos || 0 }} 个视频</text>
           </view>
         </view>
+        <text class="edit-icon">✏️</text>
       </view>
       
       <!-- 积分卡片 -->
@@ -105,9 +106,8 @@ onMounted(() => {
 })
 
 // 去充值
-const goRecharge = () => {
-  if (!userStore.hasLogin) {
-    handleLogin()
+const goRecharge = async () => {
+  if (!await userStore.checkLogin()) {
     return
   }
   uni.navigateTo({
@@ -116,9 +116,8 @@ const goRecharge = () => {
 }
 
 // 我的作品
-const goWorks = () => {
-  if (!userStore.hasLogin) {
-    handleLogin()
+const goWorks = async () => {
+  if (!await userStore.checkLogin()) {
     return
   }
   uni.switchTab({
@@ -127,9 +126,8 @@ const goWorks = () => {
 }
 
 // 积分明细
-const goCreditLogs = () => {
-  if (!userStore.hasLogin) {
-    handleLogin()
+const goCreditLogs = async () => {
+  if (!await userStore.checkLogin()) {
     return
   }
   uni.navigateTo({
@@ -138,13 +136,22 @@ const goCreditLogs = () => {
 }
 
 // 生成历史
-const goHistory = () => {
-  if (!userStore.hasLogin) {
-    handleLogin()
+const goHistory = async () => {
+  if (!await userStore.checkLogin()) {
     return
   }
   uni.switchTab({
     url: '/pages/generate/index'
+  })
+}
+
+// 编辑个人信息
+const goEditProfile = async () => {
+  if (!await userStore.checkLogin()) {
+    return
+  }
+  uni.navigateTo({
+    url: '/pages/profile/edit'
   })
 }
 
@@ -210,6 +217,7 @@ const handleLogout = () => {
     display: flex;
     align-items: center;
     margin-bottom: 40rpx;
+    cursor: pointer;
     
     .avatar {
       width: 120rpx;
@@ -232,6 +240,11 @@ const handleLogout = () => {
         font-size: 24rpx;
         color: #999;
       }
+    }
+    
+    .edit-icon {
+      font-size: 32rpx;
+      opacity: 0.6;
     }
   }
   

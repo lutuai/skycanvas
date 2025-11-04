@@ -109,6 +109,11 @@ video:
     queue-size: 100           # 队列大小
     check-interval: 5000      # 状态检查间隔（毫秒）
 
+# 用户配置
+user:
+  register:
+    bonus-credits: 100  # 新用户注册奖励积分
+
 # 日志配置
 logging:
   level:

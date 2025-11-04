@@ -39,10 +39,10 @@ pause
 
 echo.
 echo [3/4] 检查配置文件...
-if not exist "backend\src\main\resources\application-dev.yml" (
+if not exist "..\backend\src\main\resources\application-dev.yml" (
     echo ⚠️  未找到application-dev.yml配置文件
     echo 正在复制示例配置...
-    copy "backend\src\main\resources\application-dev.yml.example" "backend\src\main\resources\application-dev.yml"
+    copy "..\backend\src\main\resources\application-dev.yml.example" "..\backend\src\main\resources\application-dev.yml"
     echo ✅ 配置文件已创建
     echo.
     echo ⚠️  请编辑 backend\src\main\resources\application-dev.yml 填写配置
@@ -55,8 +55,7 @@ if not exist "backend\src\main\resources\application-dev.yml" (
 echo.
 echo [4/4] 启动后端服务...
 echo.
-cd backend
+cd ..\backend
 call mvn clean spring-boot:run
 
 pause
-

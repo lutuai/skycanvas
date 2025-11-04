@@ -8,10 +8,7 @@ onLaunch(() => {
   console.log('App Launch')
   // 自动登录
   const userStore = useUserStore()
-  const token = uni.getStorageSync('token')
-  if (token) {
-    userStore.loadUserInfo()
-  }
+  userStore.initLogin()
 })
 
 onShow(() => {

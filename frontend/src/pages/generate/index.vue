@@ -109,6 +109,48 @@
         </view>
       </view>
     </view>
+
+    <!-- 尺寸选择器模态框 -->
+    <view v-if="showResolutionModal" class="modal-overlay" @click="showResolutionModal = false">
+      <view class="modal-container" @click.stop>
+        <view class="modal-header">
+          <text class="modal-title">输入预览</text>
+          <text class="modal-close" @click="showResolutionModal = false">×</text>
+        </view>
+        <view class="modal-content">
+          <view 
+            v-for="option in resolutionOptions" 
+            :key="option.value"
+            :class="['resolution-option', formData.aspectRatio === option.value ? 'selected' : '']"
+            @click="selectResolution(option.value)"
+          >
+            <view class="option-text">{{ option.label }}</view>
+            <view v-if="formData.aspectRatio === option.value" class="option-check">✓</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 时长选择器模态框 -->
+    <view v-if="showDurationModal" class="modal-overlay" @click="showDurationModal = false">
+      <view class="modal-container" @click.stop>
+        <view class="modal-header">
+          <text class="modal-title">生成时长</text>
+          <text class="modal-close" @click="showDurationModal = false">×</text>
+        </view>
+        <view class="modal-content">
+          <view 
+            v-for="option in durationOptions" 
+            :key="option.value"
+            :class="['resolution-option', formData.duration === option.value ? 'selected' : '']"
+            @click="selectDuration(option.value)"
+          >
+            <view class="option-text">{{ option.label }}</view>
+            <view v-if="formData.duration === option.value" class="option-check">✓</view>
+          </view>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -128,7 +170,7 @@ const formData = ref({
   imageUrl: '',
   prompt: '',
   resolution: '720p',
-  aspectRatio: 'landscape',
+  aspectRatio: 'portrait_product',
   duration: 10
 })
 
@@ -138,14 +180,30 @@ const generating = ref(false)
 // 任务列表
 const taskList = ref([])
 
+// 显示尺寸选择器
+const showResolutionModal = ref(false)
+
+// 显示时长选择器
+const showDurationModal = ref(false)
+
+// 尺寸选项
+const resolutionOptions = ref([
+  { label: '竖屏—人像高清', value: 'portrait_person' },
+  { label: '横屏—人像高清', value: 'landscape_person' },
+  { label: '竖屏—商品高清', value: 'portrait_product' },
+  { label: '横屏—商品高清', value: 'landscape_product' }
+])
+
+// 时长选项
+const durationOptions = ref([
+  { label: '10秒', value: 10 },
+  { label: '15秒', value: 15 }
+])
+
 // 分辨率文本
 const resolutionText = computed(() => {
-  const map = {
-    landscape: '竖屏—商品高清',
-    portrait: '横屏',
-    square: '正方形'
-  }
-  return map[formData.value.aspectRatio] || '竖屏—商品高清'
+  const option = resolutionOptions.value.find(o => o.value === formData.value.aspectRatio)
+  return option ? option.label : '竖屏—商品高清'
 })
 
 // 所需积分
@@ -176,24 +234,24 @@ const deleteImage = () => {
 
 // 显示分辨率选择器
 const showResolutionPicker = () => {
-  uni.showActionSheet({
-    itemList: ['竖屏—商品高清', '横屏', '正方形'],
-    success: (res) => {
-      const map = ['landscape', 'portrait', 'square']
-      formData.value.aspectRatio = map[res.tapIndex]
-    }
-  })
+  showResolutionModal.value = true
+}
+
+// 选择分辨率
+const selectResolution = (value) => {
+  formData.value.aspectRatio = value
+  showResolutionModal.value = false
 }
 
 // 显示时长选择器
 const showDurationPicker = () => {
-  uni.showActionSheet({
-    itemList: ['2秒', '5秒', '10秒'],
-    success: (res) => {
-      const durations = [2, 5, 10]
-      formData.value.duration = durations[res.tapIndex]
-    }
-  })
+  showDurationModal.value = true
+}
+
+// 选择时长
+const selectDuration = (value) => {
+  formData.value.duration = value
+  showDurationModal.value = false
 }
 
 // 生成视频
@@ -240,7 +298,7 @@ const handleGenerate = async () => {
       imageUrl: '',
       prompt: '',
       resolution: '720p',
-      aspectRatio: 'landscape',
+      aspectRatio: 'portrait_product',
       duration: 10
     }
   } catch (error) {
@@ -509,6 +567,109 @@ onMounted(() => {
       font-size: 28rpx;
       color: #666;
     }
+  }
+}
+
+// 模态框样式
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 40rpx;
+}
+
+.modal-container {
+  width: 100%;
+  max-width: 600rpx;
+  background: #1a1a1a;
+  border-radius: 24rpx;
+  overflow: hidden;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    transform: translateY(100rpx);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 40rpx;
+  border-bottom: 2rpx solid #333;
+  
+  .modal-title {
+    font-size: 32rpx;
+    font-weight: bold;
+    color: #fff;
+  }
+  
+  .modal-close {
+    font-size: 60rpx;
+    color: #999;
+    line-height: 40rpx;
+    cursor: pointer;
+    
+    &:active {
+      opacity: 0.7;
+    }
+  }
+}
+
+.modal-content {
+  padding: 20rpx;
+}
+
+.resolution-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 32rpx 30rpx;
+  margin: 10rpx 0;
+  background: #2a2a2a;
+  border-radius: 16rpx;
+  border: 2rpx solid transparent;
+  transition: all 0.3s ease;
+  
+  &:active {
+    opacity: 0.8;
+    transform: scale(0.98);
+  }
+  
+  &.selected {
+    background: linear-gradient(135deg, rgba(0, 217, 163, 0.15), rgba(0, 217, 163, 0.05));
+    border-color: #00d9a3;
+    
+    .option-text {
+      color: #00d9a3;
+      font-weight: bold;
+    }
+  }
+  
+  .option-text {
+    font-size: 30rpx;
+    color: #fff;
+    transition: color 0.3s ease;
+  }
+  
+  .option-check {
+    font-size: 32rpx;
+    color: #00d9a3;
+    font-weight: bold;
   }
 }
 </style>

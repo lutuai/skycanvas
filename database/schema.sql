@@ -178,3 +178,20 @@ INSERT INTO `tb_credit_package` (`name`, `credits`, `price`, `bonus_credits`, `s
 ('热门套餐', 600, 50.00, 100, 3, 1),
 ('超值套餐', 1200, 100.00, 300, 4, 1);
 
+-- 登录日志表
+CREATE TABLE `tb_login_log` (
+    `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '日志ID',
+    `user_id` BIGINT(20) DEFAULT NULL COMMENT '用户ID',
+    `login_ip` VARCHAR(50) DEFAULT NULL COMMENT '登录IP',
+    `login_location` VARCHAR(100) DEFAULT NULL COMMENT '登录地点',
+    `device_type` VARCHAR(50) DEFAULT NULL COMMENT '设备类型',
+    `browser` VARCHAR(50) DEFAULT NULL COMMENT '浏览器',
+    `os` VARCHAR(50) DEFAULT NULL COMMENT '操作系统',
+    `status` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '登录状态：0-失败，1-成功',
+    `fail_reason` VARCHAR(200) DEFAULT NULL COMMENT '失败原因',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_user_id` (`user_id`),
+    KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='登录日志表';
+

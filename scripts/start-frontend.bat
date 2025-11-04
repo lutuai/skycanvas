@@ -20,7 +20,7 @@ echo ✅ Node.js环境检测成功
 
 echo.
 echo [2/3] 安装依赖...
-cd frontend
+cd ..\frontend
 if not exist "node_modules" (
     echo 正在安装依赖，请稍候...
     call npm install
@@ -60,4 +60,3 @@ if "%choice%"=="1" (
 )
 
 pause
-
