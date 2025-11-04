@@ -1,8 +1,15 @@
 #!/bin/bash
 
+# 切换到脚本所在目录
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
 echo "===================================="
 echo "SkyCanvas 后端启动脚本 (Linux/Mac)"
 echo "===================================="
+echo
+
+echo "当前目录: $(pwd)"
 echo
 
 echo "[1/4] 检查环境..."
@@ -51,6 +58,23 @@ fi
 echo
 echo "[4/4] 启动后端服务..."
 echo
-cd ../backend
-mvn clean spring-boot:run
+
+# 切换到backend目录
+cd "$SCRIPT_DIR/../backend"
+if [ ! -f "pom.xml" ]; then
+    echo "❌ 错误：未找到backend目录或pom.xml文件"
+    echo "当前目录: $(pwd)"
+    exit 1
+fi
+
+echo "后端目录: $(pwd)"
+echo
+echo "正在启动Spring Boot应用..."
+echo "提示：首次启动可能需要下载依赖，请耐心等待..."
+echo
+
+mvn spring-boot:run
+
+echo
+echo "后端服务已停止"
 

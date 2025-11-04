@@ -54,12 +54,24 @@ public class UserService {
     private Integer registerBonusCredits;
 
     /**
-     * 微信小程序登录
+     * 用户登录（支持微信小程序和H5）
      */
     @Transactional(rollbackFor = Exception.class)
     public UserInfoDTO login(LoginRequest request) {
-        // 1. 调用微信接口获取openid
-        String openid = getOpenidByCode(request.getCode());
+        // 1. 获取openid（区分微信小程序和H5）
+        String openid;
+        String loginType;
+        
+        if (request.getCode() != null && request.getCode().startsWith("h5_")) {
+            // H5登录，直接使用设备ID作为openid
+            openid = request.getCode();
+            loginType = "H5";
+            log.info("H5登录: deviceId={}", openid);
+        } else {
+            // 微信小程序登录，调用微信接口获取openid
+            openid = getOpenidByCode(request.getCode());
+            loginType = "微信小程序";
+        }
         
         // 2. 查询或创建用户
         User user = getUserByOpenid(openid);
@@ -96,7 +108,8 @@ public class UserService {
         dto.setToken(token);
         
         // 记录登录日志
-        log.info("用户登录成功: userId={}, openid={}, isNewUser={}", user.getId(), openid, isNewUser);
+        log.info("用户登录成功: userId={}, openid={}, loginType={}, isNewUser={}", 
+                user.getId(), openid, loginType, isNewUser);
         loginLogService.recordLoginSuccess(user.getId());
         
         return dto;

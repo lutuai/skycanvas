@@ -1,5 +1,5 @@
 server:
-  port: 8090
+  port: 8080
   servlet:
     context-path: /api
 
@@ -8,6 +8,17 @@ spring:
     active: dev
   application:
     name: skycanvas-backend
+  
+  # Jackson配置
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    serialization:
+      write-dates-as-timestamps: false
+      fail-on-empty-beans: false
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
   
   # 数据源配置
   datasource:
@@ -57,7 +68,7 @@ mybatis-plus:
 
 # JWT配置
 jwt:
-  secret: ${JWT_SECRET:SkyCanvas2024SecretKeyForJWT}
+  secret: ${JWT_SECRET:SkyCanvas2024SecretKeyForJWTToken}
   expiration: 604800000  # 7天（毫秒）
   header: Authorization
   prefix: Bearer 

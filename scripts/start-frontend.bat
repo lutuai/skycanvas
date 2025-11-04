@@ -1,9 +1,12 @@
 @echo off
-chcp 65001
+chcp 65001 >nul 2>&1
 echo ====================================
 echo SkyCanvas 前端启动脚本 (Windows)
 echo ====================================
 echo.
+
+REM 切换到脚本所在目录
+cd /d "%~dp0"
 
 echo [1/3] 检查环境...
 echo.
@@ -20,7 +23,19 @@ echo ✅ Node.js环境检测成功
 
 echo.
 echo [2/3] 安装依赖...
-cd ..\frontend
+
+REM 切换到frontend目录
+cd /d "%~dp0\..\frontend"
+if not exist "package.json" (
+    echo ❌ 错误：未找到frontend目录或package.json文件
+    echo 当前目录: %CD%
+    pause
+    exit /b 1
+)
+
+echo 前端目录: %CD%
+echo.
+
 if not exist "node_modules" (
     echo 正在安装依赖，请稍候...
     call npm install
@@ -29,6 +44,8 @@ if not exist "node_modules" (
         echo 尝试使用国内镜像...
         call npm install --registry=https://registry.npmmirror.com
     )
+) else (
+    echo ✅ 依赖已安装
 )
 
 echo.

@@ -1,6 +1,11 @@
 @echo off
+chcp 65001 >nul 2>&1
+
 REM SkyCanvas 快捷启动脚本 (Windows)
 REM 详细脚本请查看 scripts 目录
+
+REM 切换到脚本所在目录（项目根目录）
+cd /d "%~dp0"
 
 echo.
 echo ====================================

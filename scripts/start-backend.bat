@@ -1,8 +1,13 @@
 @echo off
-chcp 65001
+chcp 65001 >nul 2>&1
 echo ====================================
 echo SkyCanvas 后端启动脚本 (Windows)
 echo ====================================
+echo.
+
+REM 切换到脚本所在目录
+cd /d "%~dp0"
+echo 当前目录: %CD%
 echo.
 
 echo [1/4] 检查环境...
@@ -17,7 +22,9 @@ if errorlevel 1 (
     exit /b 1
 )
 echo ✅ Java环境检测成功
+echo.
 
+echo 正在检查Maven...
 REM 检查Maven
 mvn -version >nul 2>&1
 if errorlevel 1 (
@@ -55,7 +62,24 @@ if not exist "..\backend\src\main\resources\application-dev.yml" (
 echo.
 echo [4/4] 启动后端服务...
 echo.
-cd ..\backend
-call mvn clean spring-boot:run
 
+REM 切换到backend目录
+cd /d "%~dp0\..\backend"
+if not exist "pom.xml" (
+    echo ❌ 错误：未找到backend目录或pom.xml文件
+    echo 当前目录: %CD%
+    pause
+    exit /b 1
+)
+
+echo 后端目录: %CD%
+echo.
+echo 正在启动Spring Boot应用...
+echo 提示：首次启动可能需要下载依赖，请耐心等待...
+echo.
+
+call mvn spring-boot:run
+
+echo.
+echo 后端服务已停止
 pause

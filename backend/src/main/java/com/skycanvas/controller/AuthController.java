@@ -26,7 +26,7 @@ public class AuthController {
     private UserService userService;
 
     /**
-     * 微信小程序登录
+     * 用户登录（支持微信小程序和H5）
      */
     @PostMapping("/login")
     public Result<UserInfoDTO> login(@RequestBody @Validated LoginRequest request) {

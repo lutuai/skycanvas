@@ -28,9 +28,7 @@ export function updateUserInfo(data) {
  * 发送短信验证码
  */
 export function sendSmsCode(phone) {
-  return post('/auth/sms/code', null, {
-    params: { phone }
-  })
+  return post(`/auth/sms/code?phone=${phone}`)
 }
 
 /**

@@ -58,57 +58,24 @@ export const useUserStore = defineStore('user', {
     },
     
     /**
-     * 微信登录
+     * 登录（支持多平台）
      */
     async login(showToast = true) {
       try {
-        // 获取微信code
-        const { code } = await uni.login({
-          provider: 'weixin'
-        })
-        
-        // 获取用户信息
-        let nickname = ''
-        let avatar = ''
-        
         // #ifdef MP-WEIXIN
-        // 微信小程序需要用户授权才能获取信息
-        try {
-          const { userInfo } = await uni.getUserProfile({
-            desc: '用于完善用户资料'
-          })
-          nickname = userInfo.nickName
-          avatar = userInfo.avatarUrl
-        } catch (e) {
-          console.log('用户取消授权')
-        }
+        // 微信小程序登录
+        return await this.loginByWeixin(showToast)
         // #endif
         
-        // 调用登录接口
-        const data = await loginApi({
-          code,
-          nickname,
-          avatar
-        })
+        // #ifdef H5
+        // H5登录 - 使用测试账号或手机号登录
+        return await this.loginByH5(showToast)
+        // #endif
         
-        // 保存token和用户信息
-        this.token = data.token
-        this.userInfo = data
-        this.isLogin = true
-        
-        uni.setStorageSync('token', data.token)
-        uni.setStorageSync('userInfo', data)
-        
-        if (showToast) {
-          const welcomeMsg = data.credits > 0 ? `欢迎回来！您有 ${data.credits} 积分` : '登录成功'
-          uni.showToast({
-            title: welcomeMsg,
-            icon: 'success',
-            duration: 2000
-          })
-        }
-        
-        return data
+        // #ifndef MP-WEIXIN || H5
+        // 其他平台暂不支持
+        throw new Error('当前平台暂不支持登录')
+        // #endif
       } catch (error) {
         console.error('登录失败:', error)
         if (showToast) {
@@ -118,6 +85,85 @@ export const useUserStore = defineStore('user', {
           })
         }
         throw error
+      }
+    },
+    
+    /**
+     * 微信小程序登录
+     */
+    async loginByWeixin(showToast = true) {
+      // 获取微信code
+      const { code } = await uni.login({
+        provider: 'weixin'
+      })
+      
+      // 获取用户信息
+      let nickname = ''
+      let avatar = ''
+      
+      try {
+        const { userInfo } = await uni.getUserProfile({
+          desc: '用于完善用户资料'
+        })
+        nickname = userInfo.nickName
+        avatar = userInfo.avatarUrl
+      } catch (e) {
+        console.log('用户取消授权')
+      }
+      
+      // 调用登录接口
+      const data = await loginApi({
+        code,
+        nickname,
+        avatar
+      })
+      
+      // 保存登录信息
+      this.saveLoginData(data, showToast)
+      return data
+    },
+    
+    /**
+     * H5登录（使用测试账号）
+     */
+    async loginByH5(showToast = true) {
+      // H5环境使用模拟登录，生成一个唯一的设备ID
+      let deviceId = uni.getStorageSync('deviceId')
+      if (!deviceId) {
+        deviceId = 'h5_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+        uni.setStorageSync('deviceId', deviceId)
+      }
+      
+      // 调用登录接口，使用设备ID作为code
+      const data = await loginApi({
+        code: deviceId,
+        nickname: '访客用户',
+        avatar: '/static/default-avatar.png'
+      })
+      
+      // 保存登录信息
+      this.saveLoginData(data, showToast)
+      return data
+    },
+    
+    /**
+     * 保存登录数据
+     */
+    saveLoginData(data, showToast = true) {
+      this.token = data.token
+      this.userInfo = data
+      this.isLogin = true
+      
+      uni.setStorageSync('token', data.token)
+      uni.setStorageSync('userInfo', data)
+      
+      if (showToast) {
+        const welcomeMsg = data.credits > 0 ? `欢迎回来！您有 ${data.credits} 积分` : '登录成功'
+        uni.showToast({
+          title: welcomeMsg,
+          icon: 'success',
+          duration: 2000
+        })
       }
     },
     
