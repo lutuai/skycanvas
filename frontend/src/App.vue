@@ -1,3 +1,5 @@
+<template></template>
+
 <script setup>
 import { onLaunch, onShow, onHide } from '@dcloudio/uni-app'
 import { useUserStore } from '@/stores/user'
@@ -22,9 +24,6 @@ onHide(() => {
 </script>
 
 <style lang="scss">
-/* 引入uView样式 */
-@import 'uview-plus/index.scss';
-
 /* 全局样式 */
 page {
   background-color: #0a0a0a;
