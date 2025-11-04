@@ -1,0 +1,117 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: skycanvas-backend
+  
+  # 数据源配置
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/skycanvas?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: ${DB_PASSWORD:123456}
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      max-wait: 60000
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      validation-query: SELECT 1
+      
+  # Redis配置
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    database: 0
+    timeout: 10000
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: -1
+
+# MyBatis Plus配置
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.skycanvas.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# JWT配置
+jwt:
+  secret: ${JWT_SECRET:SkyCanvas2024SecretKeyForJWT}
+  expiration: 604800000  # 7天（毫秒）
+  header: Authorization
+  prefix: Bearer 
+
+# 微信配置
+wechat:
+  miniapp:
+    app-id: ${WECHAT_APPID:}
+    app-secret: ${WECHAT_SECRET:}
+  payment:
+    mch-id: ${WECHAT_MCH_ID:}
+    api-key: ${WECHAT_PAY_KEY:}
+    notify-url: ${WECHAT_PAY_NOTIFY_URL:}
+
+# 阿里云OSS配置
+aliyun:
+  oss:
+    endpoint: ${ALIYUN_OSS_ENDPOINT:}
+    access-key-id: ${ALIYUN_ACCESS_KEY:}
+    access-key-secret: ${ALIYUN_ACCESS_SECRET:}
+    bucket-name: ${ALIYUN_OSS_BUCKET:skycanvas}
+    cdn-domain: ${ALIYUN_CDN_DOMAIN:}
+
+# 视频生成服务配置
+video:
+  provider:
+    # 默认使用的provider（sora-proxy / sora-official）
+    default: sora-proxy
+    
+    # 第三方Sora中转站配置
+    sora-proxy:
+      enabled: true
+      api-key: ${SORA_PROXY_API_KEY:}
+      base-url: ${SORA_PROXY_BASE_URL:https://api.soraapi.cn}
+      timeout: 300000  # 5分钟超时
+      retry: 3
+      
+    # 官方Sora API配置（未来使用）
+    sora-official:
+      enabled: false
+      api-key: ${OPENAI_API_KEY:}
+      base-url: https://api.openai.com
+      timeout: 300000
+      retry: 3
+      
+  # 任务配置
+  task:
+    max-concurrent: 10        # 最大并发任务数
+    queue-size: 100           # 队列大小
+    check-interval: 5000      # 状态检查间隔（毫秒）
+
+# 日志配置
+logging:
+  level:
+    com.skycanvas: debug
+    org.springframework: info
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{50} - %msg%n"
+

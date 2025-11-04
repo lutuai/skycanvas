@@ -1,0 +1,41 @@
+# Maven
+backend/target/
+backend/*.jar
+backend/*.war
+backend/*.ear
+backend/.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.DS_Store
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/unpackage/
+frontend/.hbuilderx/
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+application-dev.yml
+application-prod.yml
+
+# Database
+*.sql.backup
+
+# Temporary
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+

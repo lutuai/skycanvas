@@ -1,0 +1,33 @@
+{
+  "name": "skycanvas-frontend",
+  "version": "1.0.0",
+  "description": "SkyCanvas AI视频生成小程序前端",
+  "main": "main.js",
+  "scripts": {
+    "dev:mp-weixin": "uni -p mp-weixin",
+    "dev:h5": "uni",
+    "build:mp-weixin": "uni build -p mp-weixin",
+    "build:h5": "uni build"
+  },
+  "dependencies": {
+    "@dcloudio/uni-app": "^3.0.0",
+    "@dcloudio/uni-mp-weixin": "^3.0.0",
+    "@dcloudio/uni-h5": "^3.0.0",
+    "pinia": "^2.1.7",
+    "uview-plus": "^3.2.10"
+  },
+  "devDependencies": {
+    "@dcloudio/types": "^3.4.8",
+    "@dcloudio/uni-cli-shared": "^3.0.0",
+    "@dcloudio/uni-stacktracey": "^3.0.0",
+    "@dcloudio/vite-plugin-uni": "^3.0.0",
+    "vite": "^4.5.0",
+    "vue": "^3.3.4",
+    "sass": "^1.69.5",
+    "sass-loader": "^13.3.2"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
+
