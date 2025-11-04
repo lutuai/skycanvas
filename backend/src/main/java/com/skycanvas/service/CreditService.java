@@ -45,14 +45,14 @@ public class CreditService {
         userMapper.updateById(user);
 
         // 记录积分流水
-        CreditLog log = new CreditLog();
-        log.setUserId(userId);
-        log.setAmount(amount);
-        log.setType(1);  // 充值
-        log.setBalance(user.getCredits());
-        log.setDescription("充值" + amount + "积分");
-        log.setOrderId(orderId);
-        creditLogMapper.insert(log);
+        CreditLog creditLog = new CreditLog();
+        creditLog.setUserId(userId);
+        creditLog.setAmount(amount);
+        creditLog.setType(1);  // 充值
+        creditLog.setBalance(user.getCredits());
+        creditLog.setDescription("充值" + amount + "积分");
+        creditLog.setOrderId(orderId);
+        creditLogMapper.insert(creditLog);
 
         log.info("用户{}充值积分成功: +{}, 余额: {}", userId, amount, user.getCredits());
     }
@@ -81,14 +81,14 @@ public class CreditService {
         userMapper.updateById(user);
 
         // 记录积分流水
-        CreditLog log = new CreditLog();
-        log.setUserId(userId);
-        log.setAmount(-amount);  // 负数表示消费
-        log.setType(2);  // 消费
-        log.setBalance(user.getCredits());
-        log.setDescription(description);
-        log.setTaskId(taskId);
-        creditLogMapper.insert(log);
+        CreditLog creditLog = new CreditLog();
+        creditLog.setUserId(userId);
+        creditLog.setAmount(-amount);  // 负数表示消费
+        creditLog.setType(2);  // 消费
+        creditLog.setBalance(user.getCredits());
+        creditLog.setDescription(description);
+        creditLog.setTaskId(taskId);
+        creditLogMapper.insert(creditLog);
 
         log.info("用户{}消费积分成功: -{}, 余额: {}", userId, amount, user.getCredits());
     }
@@ -111,14 +111,14 @@ public class CreditService {
         userMapper.updateById(user);
 
         // 记录积分流水
-        CreditLog log = new CreditLog();
-        log.setUserId(userId);
-        log.setAmount(amount);
-        log.setType(3);  // 退款
-        log.setBalance(user.getCredits());
-        log.setDescription("任务失败，退回" + amount + "积分");
-        log.setTaskId(taskId);
-        creditLogMapper.insert(log);
+        CreditLog creditLog = new CreditLog();
+        creditLog.setUserId(userId);
+        creditLog.setAmount(amount);
+        creditLog.setType(3);  // 退款
+        creditLog.setBalance(user.getCredits());
+        creditLog.setDescription("任务失败，退回" + amount + "积分");
+        creditLog.setTaskId(taskId);
+        creditLogMapper.insert(creditLog);
 
         log.info("用户{}退回积分成功: +{}, 余额: {}", userId, amount, user.getCredits());
     }

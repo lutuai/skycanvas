@@ -1,248 +1,259 @@
-# SkyCanvas 快速启动指南
+# 🚀 SkyCanvas 快速启动指南
 
-## 🚀 5分钟快速体验
+> 5分钟快速启动 AI视频生成平台
 
-### 前置准备
+## 📋 环境检查
 
-确保已安装以下软件：
+### 必需软件
+
+- ✅ **JDK 17+** - 后端运行环境
+- ✅ **Maven 3.6+** - 后端构建工具
+- ✅ **MySQL 8.0+** - 数据库
+- ✅ **Redis 6.0+** - 缓存
+- ✅ **Node.js 14+** - 前端运行环境
+
+### 检查命令
 
 ```bash
-# 检查版本
-java -version    # 需要 JDK 17+
-mysql --version  # 需要 MySQL 8.0+
-redis-server --version  # 需要 Redis 6.0+
-node -v          # 需要 Node.js 14+
+java -version      # 应显示 17.x.x
+mvn -version       # 应显示 3.6+
+mysql --version    # 应显示 8.0+
+redis-server --version
+node -v && npm -v
 ```
+
+---
+
+## ⚡ 三步启动（Windows）
 
 ### 第一步：初始化数据库
 
+**使用脚本（推荐）**
 ```bash
-# 1. 启动MySQL
-sudo service mysql start
-
-# 2. 创建数据库并导入数据
-mysql -u root -p < database/schema.sql
-
-# 验证：查看表是否创建成功
-mysql -u root -p skycanvas -e "SHOW TABLES;"
+# 双击运行
+init-database.bat
 ```
 
-### 第二步：启动Redis
-
+**手动执行**
 ```bash
-redis-server
+# 导入数据库
+mysql -u root -p < database\schema.sql
 ```
 
-### 第三步：配置后端
+### 第二步：启动后端
 
+**使用脚本（推荐）**
+```bash
+# 双击运行
+start-backend.bat
+```
+
+**手动执行**
 ```bash
 cd backend
 
-# 复制配置文件
-cp src/main/resources/application-dev.yml.example src/main/resources/application-dev.yml
+# 1. 复制配置文件
+copy src\main\resources\application-dev.yml.example src\main\resources\application-dev.yml
 
-# 修改配置（最小配置）
-# 编辑 application-dev.yml，修改以下内容：
-# - 数据库密码
-# - Redis密码（如果有）
-```
+# 2. 编辑配置文件（修改数据库密码等）
+notepad src\main\resources\application-dev.yml
 
-### 第四步：启动后端
+# 3. 启动Redis（新窗口）
+redis-server
 
-```bash
-# 在backend目录下
+# 4. 启动后端
 mvn spring-boot:run
-
-# 看到以下输出表示成功：
-# ====================================
-# SkyCanvas Backend Started Successfully!
-# API地址: http://localhost:8080/api
-# ====================================
 ```
 
-### 第五步：启动前端
+✅ 看到以下输出表示成功：
+```
+====================================
+SkyCanvas Backend Started Successfully!
+API地址: http://localhost:8080/api
+====================================
+```
 
-#### 方式一：H5开发（推荐快速体验）
+### 第三步：启动前端
 
+**使用脚本（推荐）**
+```bash
+# 双击运行
+start-frontend.bat
+
+# 选择：1-H5浏览器版 / 2-微信小程序版
+```
+
+**手动执行**
 ```bash
 cd frontend
 
 # 安装依赖
 npm install
 
-# 启动H5
+# H5版（浏览器访问）
 npm run dev:h5
+# 访问: http://localhost:3000
 
-# 浏览器访问: http://localhost:3000
+# 小程序版
+npm run dev:mp-weixin
+# 用微信开发者工具导入: frontend\dist\dev\mp-weixin
 ```
 
-#### 方式二：微信小程序开发
+---
 
-```bash
-cd frontend
+## 🌐 访问地址
 
-# 安装依赖
+| 服务 | 地址 | 说明 |
+|------|------|------|
+| 后端API | http://localhost:8080/api | Spring Boot服务 |
+| H5前端 | http://localhost:3000 | 浏览器访问 |
+| 小程序 | 微信开发者工具 | 导入dist\dev\mp-weixin |
+
+---
+
+## 🔧 最小配置
+
+### 后端配置（application-dev.yml）
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/skycanvas
+    username: root
+    password: 你的MySQL密码  # ⚠️ 必填
+  
+  redis:
+    host: localhost
+    port: 6379
+    password: ""  # 如果Redis有密码，填写这里
+```
+
+### 前端配置（可选）
+
+如需修改API地址，编辑 `frontend\src\utils\request.js`：
+
+```javascript
+const BASE_URL = 'http://localhost:8080/api'
+```
+
+---
+
+## ⚠️ 常见问题
+
+### 后端启动失败
+
+**问题**: `Communications link failure`
+```
+✅ 解决: 
+1. 检查MySQL是否启动
+2. 检查数据库密码是否正确
+3. 验证数据库是否创建成功：
+   mysql -u root -p
+   USE skycanvas;
+   SHOW TABLES;
+```
+
+**问题**: `Connection refused: connect` (Redis)
+```
+✅ 解决:
+1. 启动Redis: redis-server
+2. 或暂时注释配置文件中的Redis相关配置（仅测试用）
+```
+
+### 前端启动失败
+
+**问题**: `npm install` 失败
+```
+✅ 解决:
+# 方式1: 清除缓存
+npm cache clean --force
 npm install
 
-# 启动小程序编译
-npm run dev:mp-weixin
-
-# 使用微信开发者工具导入项目
-# 目录: frontend/dist/dev/mp-weixin
-```
-
-### 第六步：测试功能
-
-1. **登录测试**（H5版）
-   - 由于H5无法使用微信登录，可以先跳过登录功能
-   - 或修改代码添加测试账号登录
-
-2. **查看界面**
-   - 首页
-   - 生成页（需要登录）
-   - 个人中心
-
-## 📝 开发模式配置
-
-### 测试账号登录（可选）
-
-为了方便H5开发测试，可以添加测试登录：
-
-编辑 `backend/src/main/java/com/skycanvas/controller/AuthController.java`，添加测试接口：
-
-```java
-@PostMapping("/test-login")
-public Result<UserInfoDTO> testLogin() {
-    // 仅开发环境使用
-    User user = userService.getUserByOpenid("test_openid");
-    if (user == null) {
-        user = new User();
-        user.setOpenid("test_openid");
-        user.setNickname("测试用户");
-        user.setAvatar("https://via.placeholder.com/100");
-        user.setCredits(1000);
-        // 保存用户...
-    }
-    
-    String token = jwtUtils.generateToken(user.getId());
-    UserInfoDTO dto = new UserInfoDTO();
-    BeanUtils.copyProperties(user, dto);
-    dto.setToken(token);
-    return Result.success(dto);
-}
-```
-
-## 🔧 常见问题
-
-### 1. 后端启动失败
-
-**问题**: `Connection refused: connect`
-
-**解决**: 检查MySQL和Redis是否启动
-
-```bash
-# 检查MySQL
-sudo service mysql status
-
-# 检查Redis
-redis-cli ping
-```
-
-### 2. 前端无法访问后端
-
-**问题**: 跨域错误或连接失败
-
-**解决**: 
-- 确保后端已启动（http://localhost:8080）
-- 检查 `frontend/src/utils/request.js` 中的BASE_URL配置
-- H5开发已配置代理，应该不会有跨域问题
-
-### 3. 依赖安装失败
-
-**问题**: `npm install` 报错
-
-**解决**:
-```bash
-# 清除缓存
-npm cache clean --force
-
-# 使用国内镜像
+# 方式2: 使用国内镜像
 npm install --registry=https://registry.npmmirror.com
 
-# 或使用cnpm
+# 方式3: 使用cnpm
 npm install -g cnpm --registry=https://registry.npmmirror.com
 cnpm install
 ```
 
-### 4. Maven依赖下载慢
-
-**解决**: 配置阿里云镜像
-
-编辑 `~/.m2/settings.xml`:
-
-```xml
-<mirrors>
-  <mirror>
-    <id>aliyun</id>
-    <mirrorOf>central</mirrorOf>
-    <url>https://maven.aliyun.com/repository/public</url>
-  </mirror>
-</mirrors>
+**问题**: 页面空白或报错
+```
+✅ 检查:
+1. 后端是否启动（访问 http://localhost:8080/api）
+2. 浏览器控制台报错信息（F12 - Console）
+3. 网络请求是否正常（F12 - Network）
 ```
 
-## 📱 功能清单
+### 数据库相关
 
-- ✅ 用户登录（微信小程序）
-- ✅ 用户信息展示
-- ✅ 积分系统
-- ✅ 视频生成任务提交
-- ✅ 任务状态查询
-- ✅ 生成历史记录
-- ✅ 积分明细
-- ⚠️ 微信支付（需要配置）
-- ⚠️ 视频实际生成（需要Sora API）
-
-## 🎯 下一步
-
-1. **配置Sora API**
-   - 获取Sora API密钥
-   - 修改 `application.yml` 中的配置
-
-2. **配置微信小程序**
-   - 注册小程序
-   - 获取AppID和AppSecret
-   - 修改配置文件
-
-3. **配置阿里云OSS**
-   - 创建Bucket
-   - 获取AccessKey
-   - 修改配置文件
-
-4. **部署到生产环境**
-   - 参考 [DEPLOY.md](docs/DEPLOY.md)
-
-## 💡 提示
-
-- 开发过程中修改代码后，后端需要重启（或使用Spring Boot DevTools热重载）
-- 前端修改会自动热更新
-- 数据库表结构修改后需要重新导入SQL
-
-## 📚 文档
-
-- [API文档](docs/API.md)
-- [数据库设计](docs/DATABASE.md)
-- [部署文档](docs/DEPLOY.md)
-- [后端README](backend/README.md)
-- [前端README](frontend/README.md)
-
-## 🆘 获取帮助
-
-- 查看项目README
-- 查看各模块的README
-- 检查日志文件
-- GitHub Issues（如有）
+**问题**: 表不存在
+```
+✅ 解决: 重新导入数据库
+mysql -u root -p
+DROP DATABASE IF EXISTS skycanvas;
+SOURCE database/schema.sql;
+```
 
 ---
 
-**祝开发愉快！** 🎉
+## 📱 功能测试
 
+### 1. 测试后端API
+
+浏览器访问：
+```
+http://localhost:8080/api/credit/balance
+```
+预期结果：返回 401 未授权（说明后端正常）
+
+### 2. 测试前端页面
+
+H5访问：`http://localhost:3000`
+
+预期结果：看到暗黑主题的首页
+
+### 3. 完整功能测试（需配置）
+
+- ⚠️ 微信登录（需配置微信AppID/Secret）
+- ✅ 查看积分明细
+- ⚠️ 提交视频生成任务（需配置Sora API密钥）
+
+---
+
+## 📚 下一步
+
+### 查看文档
+- [API文档](docs/API.md) - 接口说明
+- [数据库文档](docs/DATABASE.md) - 表结构
+- [部署文档](docs/DEPLOY.md) - 生产部署
+- [项目状态](PROJECT_STATUS.md) - 完成度报告
+
+### 配置API密钥（可选）
+- 微信小程序 AppID/Secret
+- Sora API密钥
+- 阿里云OSS配置
+
+### 开始开发
+- 后端代码：`backend\src\main\java\com\skycanvas`
+- 前端代码：`frontend\src\pages`
+
+---
+
+## 🆘 需要帮助？
+
+**检查清单**：
+1. ✅ 环境是否正确安装
+2. ✅ 服务是否正常启动
+3. ✅ 配置文件是否正确
+4. ✅ 端口是否被占用
+
+**文档索引**：
+- 快速启动问题 → 本文档
+- API调用问题 → [API.md](docs/API.md)
+- 数据库问题 → [DATABASE.md](docs/DATABASE.md)
+- 部署问题 → [DEPLOY.md](docs/DEPLOY.md)
+
+---
+
+**🎉 祝你使用愉快！**

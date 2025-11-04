@@ -14,7 +14,6 @@
 ### 2. 更新所有文档
 - ✅ README.md
 - ✅ QUICKSTART.md
-- ✅ START_HERE.md
 - ✅ backend/README.md
 - ✅ docs/DEPLOY.md
 - ✅ start-backend.bat
