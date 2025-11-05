@@ -1,14 +1,14 @@
 <template>
   <view class="container">
-    <!-- 用户信息卡片 -->
-    <view class="user-card">
+    <!-- 已登录：用户信息卡片 -->
+    <view v-if="userStore.hasLogin" class="user-card">
       <view class="user-info" @click="goEditProfile">
         <image 
-          :src="userInfo?.avatar || '/static/default-avatar.png'" 
+          :src="userAvatar" 
           class="avatar"
         />
         <view class="info">
-          <view class="nickname">{{ userInfo?.nickname || '未登录' }}</view>
+          <view class="nickname">{{ userInfo?.nickname || '用户' }}</view>
           <view class="stats">
             <text>已生成 {{ userInfo?.totalVideos || 0 }} 个视频</text>
           </view>
@@ -26,6 +26,16 @@
           充值
         </button>
       </view>
+    </view>
+    
+    <!-- 未登录：登录提示卡片 -->
+    <view v-else class="login-prompt-card">
+      <view class="prompt-icon">👤</view>
+      <view class="prompt-title">您还未登录</view>
+      <view class="prompt-desc">登录后即可生成AI视频、保存作品</view>
+      <button class="btn-primary btn-login-prompt" @click="handleLogin">
+        立即登录
+      </button>
     </view>
 
     <!-- 菜单列表 -->
@@ -74,17 +84,10 @@
       </view>
     </view>
 
-    <!-- 登出按钮 -->
+    <!-- 退出登录按钮（仅登录后显示） -->
     <view v-if="userStore.hasLogin" class="logout-area">
       <button class="btn-ghost btn-logout" @click="handleLogout">
         退出登录
-      </button>
-    </view>
-    
-    <!-- 未登录按钮 -->
-    <view v-else class="logout-area">
-      <button class="btn-primary btn-login" @click="handleLogin">
-        立即登录
       </button>
     </view>
   </view>
@@ -93,26 +96,32 @@
 <script setup>
 import { computed, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '@/stores/user'
+import { getUserAvatar } from '@/utils/avatar'
 
 const userStore = useUserStore()
 
 const userInfo = computed(() => userStore.userInfo)
 
+// 获取用户头像（支持默认头像）
+const userAvatar = computed(() => {
+  return getUserAvatar(userInfo.value, 'svg')
+})
+
 // 监听登录成功事件
 let loginSuccessListener = null
 
-// 刷新用户信息
+// 页面显示时刷新
 onMounted(() => {
-  if (userStore.hasLogin) {
-    userStore.loadUserInfo()
+  // 如果已登录且有用户信息，不需要重新加载
+  // 只有当有token但没有userInfo时才重新加载
+  if (userStore.token && !userStore.userInfo) {
+    loadUserInfoSafely()
   }
   
-  // 监听登录成功事件，自动刷新页面
+  // 监听登录成功事件
   loginSuccessListener = () => {
-    console.log('监听到登录成功，刷新用户信息')
-    if (userStore.hasLogin) {
-      userStore.loadUserInfo()
-    }
+    console.log('监听到登录成功')
+    // 登录成功时，userInfo已经在登录接口中设置，不需要重新加载
   }
   uni.$on('userLoginSuccess', loginSuccessListener)
 })
@@ -123,6 +132,19 @@ onUnmounted(() => {
     uni.$off('userLoginSuccess', loginSuccessListener)
   }
 })
+
+// 安全地加载用户信息
+const loadUserInfoSafely = async () => {
+  try {
+    await userStore.loadUserInfo()
+  } catch (error) {
+    console.error('加载用户信息失败:', error)
+    // 如果加载失败，可能token已过期，清除登录状态
+    if (error.message && error.message.includes('401')) {
+      userStore.logout()
+    }
+  }
+}
 
 // 去充值
 const goRecharge = async () => {
@@ -225,11 +247,50 @@ const handleLogout = () => {
   padding: 40rpx;
 }
 
-.user-card {
+.user-card,
+.login-prompt-card {
   background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
   border-radius: 24rpx;
   padding: 40rpx;
   margin-bottom: 40rpx;
+}
+
+.login-prompt-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80rpx 40rpx;
+  text-align: center;
+  
+  .prompt-icon {
+    font-size: 120rpx;
+    margin-bottom: 30rpx;
+    opacity: 0.6;
+  }
+  
+  .prompt-title {
+    font-size: 36rpx;
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 20rpx;
+  }
+  
+  .prompt-desc {
+    font-size: 26rpx;
+    color: #999;
+    margin-bottom: 50rpx;
+    line-height: 1.6;
+  }
+  
+  .btn-login-prompt {
+    width: 400rpx;
+    height: 88rpx;
+    line-height: 88rpx;
+    font-size: 32rpx;
+  }
+}
+
+.user-card {
   
   .user-info {
     display: flex;
@@ -345,8 +406,7 @@ const handleLogout = () => {
 .logout-area {
   margin-top: 60rpx;
   
-  .btn-logout,
-  .btn-login {
+  .btn-logout {
     width: 100%;
     height: 88rpx;
     line-height: 88rpx;

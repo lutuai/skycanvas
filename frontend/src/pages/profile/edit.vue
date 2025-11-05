@@ -5,7 +5,7 @@
       <view class="form-item">
         <view class="label">头像</view>
         <view class="avatar-uploader" @click="chooseAvatar">
-          <image :src="form.avatar || '/static/default-avatar.png'" class="avatar-preview" />
+          <image :src="avatarDisplay" class="avatar-preview" />
           <view class="upload-btn">点击更换</view>
         </view>
       </view>
@@ -96,6 +96,7 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
 import { useUserStore } from '@/stores/user'
+import { getUserAvatar } from '@/utils/avatar'
 
 const userStore = useUserStore()
 const userInfo = computed(() => userStore.userInfo)
@@ -104,6 +105,11 @@ const userInfo = computed(() => userStore.userInfo)
 const form = reactive({
   nickname: userInfo.value?.nickname || '',
   avatar: userInfo.value?.avatar || ''
+})
+
+// 头像显示（支持默认头像）
+const avatarDisplay = computed(() => {
+  return form.avatar || getUserAvatar(userInfo.value, 'svg')
 })
 
 // 手机号绑定表单

@@ -25,32 +25,42 @@ function requestInterceptor(config) {
 function responseInterceptor(response) {
   const { statusCode, data } = response
   
-  // Token过期，跳转登录
-  if (statusCode === 401) {
-    uni.removeStorageSync('token')
-    uni.removeStorageSync('userInfo')
-    uni.showToast({
-      title: '请先登录',
-      icon: 'none'
-    })
-    setTimeout(() => {
-      uni.reLaunch({
-        url: '/pages/index/index'
+  // HTTP状态码错误
+  if (statusCode !== 200) {
+    // Token过期，跳转登录
+    if (statusCode === 401) {
+      uni.removeStorageSync('token')
+      uni.removeStorageSync('userInfo')
+      uni.showToast({
+        title: '请先登录',
+        icon: 'none'
       })
-    }, 1500)
-    return Promise.reject(new Error('未授权'))
+      setTimeout(() => {
+        uni.navigateTo({
+          url: '/pages/login/index'
+        })
+      }, 1500)
+    } else {
+      uni.showToast({
+        title: `请求失败(${statusCode})`,
+        icon: 'none'
+      })
+    }
+    return Promise.reject(new Error(`HTTP ${statusCode}`))
   }
   
-  // 业务错误
+  // 业务状态码错误
   if (data.code !== 200) {
     uni.showToast({
-      title: data.message || '请求失败',
-      icon: 'none'
+      title: data.message || '操作失败',
+      icon: 'none',
+      duration: 2000
     })
-    return Promise.reject(new Error(data.message))
+    return Promise.reject(new Error(data.message || '操作失败'))
   }
   
-  return data.data
+  // 成功，返回数据
+  return Promise.resolve(data.data)
 }
 
 /**
@@ -73,16 +83,18 @@ export function request(options) {
     uni.request({
       ...config,
       success: (res) => {
+        // 响应拦截器现在始终返回 Promise
         responseInterceptor(res)
           .then(resolve)
           .catch(reject)
       },
       fail: (err) => {
+        console.error('网络请求失败:', err)
         uni.showToast({
-          title: '网络请求失败',
+          title: '网络连接失败',
           icon: 'none'
         })
-        reject(err)
+        reject(new Error('网络连接失败'))
       }
     })
   })

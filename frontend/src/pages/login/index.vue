@@ -219,16 +219,19 @@ const handleWeixinLogin = async () => {
     loggingIn.value = true
     await userStore.loginByWeixin()
     
-    // 登录成功，返回上一页或首页
+    // 登录成功，延迟跳转
     setTimeout(() => {
-      uni.navigateBack({
-        fail: () => {
-          uni.switchTab({
-            url: '/pages/index/index'
-          })
-        }
-      })
-    }, 1500)
+      const pages = getCurrentPages()
+      if (pages.length > 1) {
+        uni.navigateBack({
+          delta: 1
+        })
+      } else {
+        uni.switchTab({
+          url: '/pages/profile/index'
+        })
+      }
+    }, 500)
   } catch (error) {
     console.error('微信登录失败:', error)
   } finally {
@@ -242,16 +245,19 @@ const handleH5Login = async () => {
     loggingIn.value = true
     await userStore.loginByH5()
     
-    // 登录成功，返回上一页或首页
+    // 登录成功，延迟跳转
     setTimeout(() => {
-      uni.navigateBack({
-        fail: () => {
-          uni.switchTab({
-            url: '/pages/index/index'
-          })
-        }
-      })
-    }, 1500)
+      const pages = getCurrentPages()
+      if (pages.length > 1) {
+        uni.navigateBack({
+          delta: 1
+        })
+      } else {
+        uni.switchTab({
+          url: '/pages/profile/index'
+        })
+      }
+    }, 500)
   } catch (error) {
     console.error('H5登录失败:', error)
   } finally {

@@ -10,6 +10,7 @@ import {
   sendSmsCode as sendSmsCodeApi,
   loginByPhone as loginByPhoneApi
 } from '@/api/auth'
+import { getUserAvatar } from '@/utils/avatar'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -26,8 +27,8 @@ export const useUserStore = defineStore('user', {
     credits: (state) => state.userInfo?.credits || 0,
     // 用户昵称
     nickname: (state) => state.userInfo?.nickname || '未登录',
-    // 用户头像
-    avatar: (state) => state.userInfo?.avatar || '/static/default-avatar.png'
+    // 用户头像（智能生成默认头像）
+    avatar: (state) => getUserAvatar(state.userInfo, 'svg')
   },
   
   actions: {
@@ -135,11 +136,11 @@ export const useUserStore = defineStore('user', {
         uni.setStorageSync('deviceId', deviceId)
       }
       
-      // 调用登录接口，使用设备ID作为code
+      // 调用登录接口，使用设备ID作为code（不传avatar，让系统自动生成）
       const data = await loginApi({
         code: deviceId,
         nickname: '访客用户',
-        avatar: '/static/default-avatar.png'
+        avatar: '' // 空字符串，后续会自动生成默认头像
       })
       
       // 保存登录信息
