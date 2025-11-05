@@ -1,5 +1,7 @@
 # SkyCanvas - AI视频生成平台
 
+> 让想象跃然成像，用AI绘制属于你的天空画布
+> 
 > 基于Sora API的智能视频生成小程序，支持微信小程序、H5和Web多端访问
 
 <p align="center">
@@ -440,3 +442,28 @@ SkyCanvas是一个**架构清晰、文档完善、可快速迭代**的AI视频�
 - 🚀 开箱即用的启动脚本
 
 **立即开始**: 查看上方 [快速开始](#-快速开始) 章节 👆
+
+---
+
+## 👨‍💻 关于作者
+
+**鹿途AI智能体** - 主理人
+
+<p align="left">
+  <img src="https://img.shields.io/badge/微信公众号-鹿途AI智能体-07C160?style=flat-square&logo=wechat" alt="公众号">
+</p>
+
+📱 **关注公众号「鹿途AI智能体」**，获取更多AI应用开发实践和技术分享
+
+- 💡 AI应用开发教程
+- 🚀 前沿技术探索  
+- 📊 项目实战案例
+- 🔧 开发经验分享
+
+扫码关注，一起探索AI的无限可能 👇
+
+<p align="center">
+  <img src="docs/images/qrcode-wechat.jpg" alt="鹿途AI智能体公众号" width="200">
+</p>
+
+> 💡 如果这个项目对你有帮助，欢迎 Star ⭐ 支持一下！
