@@ -13,12 +13,19 @@ import {
 import { getUserAvatar } from '@/utils/avatar'
 
 export const useUserStore = defineStore('user', {
-  state: () => ({
-    token: uni.getStorageSync('token') || '',
-    userInfo: uni.getStorageSync('userInfo') || null,
-    isLogin: false,
-    loginChecked: false  // 是否已检查过登录状态
-  }),
+  state: () => {
+    const token = uni.getStorageSync('token') || ''
+    const userInfo = uni.getStorageSync('userInfo') || null
+    // 如果有 token 和 userInfo，初始化为已登录状态
+    const isLogin = !!(token && userInfo)
+    
+    return {
+      token,
+      userInfo,
+      isLogin,
+      loginChecked: false  // 是否已检查过登录状态
+    }
+  },
   
   getters: {
     // 是否已登录
@@ -36,25 +43,35 @@ export const useUserStore = defineStore('user', {
      * 初始化登录状态（自动登录）
      */
     async initLogin() {
-      // 如果已经检查过或者没有token，直接返回
+      // 如果已经检查过，直接返回
       if (this.loginChecked) {
+        console.log('已检查过登录状态，跳过')
         return
       }
       
       this.loginChecked = true
       
+      // 如果没有token，标记为未登录状态
       if (!this.token) {
         console.log('没有登录token，跳过自动登录')
+        this.isLogin = false
         return
       }
       
+      // 如果有 token 和 userInfo，先标记为已登录（避免页面闪烁）
+      if (this.token && this.userInfo) {
+        this.isLogin = true
+        console.log('从缓存恢复登录状态')
+      }
+      
       try {
-        // 尝试获取用户信息验证token有效性
+        // 后台验证token有效性并刷新用户信息
         await this.loadUserInfo()
         this.isLogin = true
-        console.log('自动登录成功')
+        console.log('自动登录验证成功')
       } catch (error) {
-        console.error('自动登录失败，token可能已过期')
+        console.error('Token验证失败，可能已过期:', error)
+        // Token失效，清除登录状态
         this.logout()
       }
     },
@@ -206,8 +223,9 @@ export const useUserStore = defineStore('user', {
     
     /**
      * 加载用户信息
+     * @param {boolean} autoLogout - 失败时是否自动登出
      */
-    async loadUserInfo() {
+    async loadUserInfo(autoLogout = false) {
       try {
         const data = await getUserInfoApi()
         // 确保响应式更新
@@ -217,8 +235,10 @@ export const useUserStore = defineStore('user', {
         return data
       } catch (error) {
         console.error('加载用户信息失败:', error)
-        // token可能已过期，清除登录状态
-        this.logout()
+        // 如果需要自动登出（非 initLogin 调用时）
+        if (autoLogout) {
+          this.logout()
+        }
         throw error
       }
     },
@@ -279,7 +299,7 @@ export const useUserStore = defineStore('user', {
         await updateUserInfoApi(data)
         
         // 重新加载用户信息
-        await this.loadUserInfo()
+        await this.loadUserInfo(true)
         
         uni.showToast({
           title: '更新成功',
@@ -319,7 +339,7 @@ export const useUserStore = defineStore('user', {
         await bindPhoneApi(data)
         
         // 重新加载用户信息
-        await this.loadUserInfo()
+        await this.loadUserInfo(true)
         
         uni.showToast({
           title: '绑定成功',
