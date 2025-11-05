@@ -37,4 +37,8 @@ video:
     sora-proxy:
       api-key: your_sora_api_key
       base-url: https://api.soraapi.cn
+    wenwenai:
+      api-key: your_wenwenai_api_key
+      base-url: https://breakout.wenwen-ai.com
+      model: sora_video2
 

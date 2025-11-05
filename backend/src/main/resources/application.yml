@@ -95,12 +95,12 @@ aliyun:
 # 视频生成服务配置
 video:
   provider:
-    # 默认使用的provider（sora-proxy / sora-official）
-    default: sora-proxy
+    # 默认使用的provider（sora-proxy / sora-official / wenwenai）
+    default: wenwenai
     
     # 第三方Sora中转站配置
     sora-proxy:
-      enabled: true
+      enabled: false
       api-key: ${SORA_PROXY_API_KEY:}
       base-url: ${SORA_PROXY_BASE_URL:https://api.soraapi.cn}
       timeout: 300000  # 5分钟超时
@@ -112,6 +112,15 @@ video:
       api-key: ${OPENAI_API_KEY:}
       base-url: https://api.openai.com
       timeout: 300000
+      retry: 3
+      
+    # WenwenAI API配置（第三方中转站 - 暂时只支持文字生成视频 不支持图片+文字生成视频）
+    wenwenai:
+      enabled: true
+      api-key: ${WENWENAI_API_KEY:}
+      base-url: ${WENWENAI_BASE_URL:https://breakout.wenwen-ai.com}
+      model: ${WENWENAI_MODEL:sora_video2}
+      timeout: 300000  # 5分钟超时
       retry: 3
       
   # 任务配置

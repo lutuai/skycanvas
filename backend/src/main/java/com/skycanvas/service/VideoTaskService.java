@@ -17,6 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * 视频任务服务
@@ -54,22 +57,13 @@ public class VideoTaskService {
         // 3. 扣除积分
         creditService.consume(userId, requiredCredits, null, "生成" + request.getDuration() + "秒视频");
 
-        // 4. 获取provider并提交任务
+        // 4. 获取provider
         VideoGenerationService provider = providerFactory.getProvider();
-        VideoTaskDTO taskDTO;
-        
-        try {
-            taskDTO = provider.submitTask(request);
-        } catch (Exception e) {
-            // 提交失败，退回积分
-            creditService.refund(userId, requiredCredits, null);
-            throw new RuntimeException("提交任务失败: " + e.getMessage());
-        }
 
-        // 5. 保存任务到数据库
+        // 5. 先保存任务到数据库（使用临时taskId）
         VideoTask task = new VideoTask();
         task.setUserId(userId);
-        task.setTaskId(taskDTO.getTaskId());
+        task.setTaskId("temp_" + UUID.randomUUID().toString().substring(0, 16));  // 临时ID
         task.setProvider(provider.getProviderName());
         task.setPrompt(request.getPrompt());
         task.setParams(JSON.toJSONString(request));
@@ -77,19 +71,68 @@ public class VideoTaskService {
         task.setProgress(0);
         task.setCostCredits(requiredCredits);
         videoTaskMapper.insert(task);
+        
+        Long dbTaskId = task.getId();
+        log.info("任务已保存到数据库, ID: {}, userId: {}", dbTaskId, userId);
 
-        // 更新积分日志中的taskId
-        Long taskId = task.getId();
-        taskDTO.setMetadata(taskDTO.getMetadata());
-        taskDTO.getMetadata().put("dbTaskId", taskId);
-
-        // 6. 异步检查任务状态
-        checkTaskStatusAsync(taskId, taskDTO.getTaskId(), provider.getProviderName());
-
-        // 7. 增加用户生成次数
+        // 6. 增加用户生成次数
         userService.incrementTotalVideos(userId);
 
+        // 7. 异步提交到第三方API并更新任务
+        submitTaskAsync(dbTaskId, request, provider, userId, requiredCredits);
+
+        // 8. 返回任务信息
+        VideoTaskDTO taskDTO = convertToDTO(task);
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("dbTaskId", dbTaskId);
+        metadata.put("provider", provider.getProviderName());
+        taskDTO.setMetadata(metadata);
+        
         return taskDTO;
+    }
+
+    /**
+     * 异步提交任务到第三方API
+     */
+    @Async
+    public void submitTaskAsync(Long dbTaskId, VideoGenerationRequest request, 
+                                 VideoGenerationService provider, Long userId, Integer requiredCredits) {
+        log.info("异步提交任务到第三方API, dbTaskId: {}", dbTaskId);
+        
+        try {
+            // 提交到第三方API
+            VideoTaskDTO taskDTO = provider.submitTask(request);
+            
+            // 更新数据库中的taskId和状态
+            VideoTask task = videoTaskMapper.selectById(dbTaskId);
+            if (task != null) {
+                task.setTaskId(taskDTO.getTaskId());
+                task.setStatus(mapStatusToInt(taskDTO.getStatus()));
+                task.setProgress(taskDTO.getProgress() != null ? taskDTO.getProgress() : 0);
+                task.setVideoUrl(taskDTO.getVideoUrl());
+                task.setCoverUrl(taskDTO.getCoverUrl());
+                task.setDuration(taskDTO.getDuration());
+                videoTaskMapper.updateById(task);
+                
+                log.info("任务提交成功, dbTaskId: {}, providerTaskId: {}", dbTaskId, taskDTO.getTaskId());
+                
+                // 启动状态检查
+                checkTaskStatusAsync(dbTaskId, taskDTO.getTaskId(), provider.getProviderName());
+            }
+        } catch (Exception e) {
+            log.error("提交任务到第三方API失败, dbTaskId: {}", dbTaskId, e);
+            
+            // 更新任务状态为失败
+            VideoTask task = videoTaskMapper.selectById(dbTaskId);
+            if (task != null) {
+                task.setStatus(3);  // 失败
+                task.setErrorMsg("提交任务失败: " + e.getMessage());
+                videoTaskMapper.updateById(task);
+            }
+            
+            // 退回积分
+            creditService.refund(userId, requiredCredits, dbTaskId);
+        }
     }
 
     /**

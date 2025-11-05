@@ -4,13 +4,13 @@
     <view class="tabs">
       <view 
         :class="['tab-item', currentTab === 0 ? 'active' : '']"
-        @click="currentTab = 0"
+        @click="handleTabChange(0)"
       >
         输入参数
       </view>
       <view 
         :class="['tab-item', currentTab === 1 ? 'active' : '']"
-        @click="currentTab = 1"
+        @click="handleTabChange(1)"
       >
         历史记录
       </view>
@@ -91,7 +91,33 @@
           v-for="task in taskList" 
           :key="task.id"
           class="history-item"
+          @click="handleTaskClick(task)"
         >
+          <!-- 视频封面/预览图 -->
+          <view class="task-preview">
+            <image 
+              v-if="task.coverUrl || task.videoUrl"
+              :src="task.coverUrl || task.videoUrl"
+              class="preview-image"
+              mode="aspectFill"
+            />
+            <view v-else class="preview-placeholder">
+              <text class="placeholder-icon">🎬</text>
+            </view>
+            
+            <!-- 状态图标 -->
+            <view v-if="task.status === 0 || task.status === 1" class="status-badge processing">
+              <text class="badge-text">{{ task.status === 0 ? '排队中' : '生成中' }}</text>
+              <text v-if="task.progress" class="badge-progress">{{ task.progress }}%</text>
+            </view>
+            <view v-else-if="task.status === 2" class="status-badge completed">
+              <text class="badge-icon">▶</text>
+            </view>
+            <view v-else-if="task.status === 3" class="status-badge failed">
+              <text class="badge-text">失败</text>
+            </view>
+          </view>
+          
           <view class="task-info">
             <view class="task-prompt">{{ task.prompt }}</view>
             <view class="task-meta">
@@ -100,12 +126,43 @@
               </text>
               <text class="task-time">{{ formatTime(task.createTime) }}</text>
             </view>
+            <view v-if="task.duration" class="task-duration">
+              <text>时长: {{ task.duration }}秒</text>
+            </view>
           </view>
+          
           <view class="task-credits">-{{ task.costCredits }}积分</view>
         </view>
         
         <view v-if="taskList.length === 0" class="empty">
           <text class="empty-text">暂无生成记录</text>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 视频播放模态框 -->
+    <view v-if="showVideoModal" class="video-modal-overlay" @click="closeVideoModal">
+      <view class="video-modal-container" @click.stop>
+        <view class="video-modal-header">
+          <text class="video-modal-title">视频预览</text>
+          <text class="video-modal-close" @click="closeVideoModal">×</text>
+        </view>
+        <view class="video-modal-content">
+          <video 
+            v-if="currentVideo"
+            :src="currentVideo.videoUrl"
+            :poster="currentVideo.coverUrl"
+            class="video-player"
+            controls
+            autoplay
+          />
+          <view class="video-info">
+            <text class="video-prompt">{{ currentVideo?.prompt }}</text>
+            <view class="video-meta">
+              <text>时长: {{ currentVideo?.duration }}秒</text>
+              <text>消耗: {{ currentVideo?.costCredits }}积分</text>
+            </view>
+          </view>
         </view>
       </view>
     </view>
@@ -155,7 +212,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { generateVideo, getMyTasks } from '@/api/video'
 import { getBalance } from '@/api/credit'
@@ -179,6 +236,13 @@ const generating = ref(false)
 
 // 任务列表
 const taskList = ref([])
+
+// 自动刷新定时器
+let refreshTimer = null
+
+// 视频播放模态框
+const showVideoModal = ref(false)
+const currentVideo = ref(null)
 
 // 显示尺寸选择器
 const showResolutionModal = ref(false)
@@ -284,14 +348,18 @@ const handleGenerate = async () => {
   try {
     const result = await generateVideo(formData.value)
     
-    uni.showToast({
+    // 显示成功提示，引导用户查看历史记录
+    uni.showModal({
       title: '任务提交成功',
-      icon: 'success'
+      content: '视频正在生成中，请到"历史记录"查看进度和结果',
+      showCancel: false,
+      confirmText: '去查看',
+      success: () => {
+        // 切换到历史记录
+        currentTab.value = 1
+        loadTaskList()
+      }
     })
-
-    // 切换到历史记录
-    currentTab.value = 1
-    loadTaskList()
     
     // 清空表单
     formData.value = {
@@ -303,6 +371,10 @@ const handleGenerate = async () => {
     }
   } catch (error) {
     console.error('生成失败:', error)
+    uni.showToast({
+      title: error.message || '提交失败',
+      icon: 'none'
+    })
   } finally {
     generating.value = false
   }
@@ -316,9 +388,64 @@ const loadTaskList = async () => {
       size: 20
     })
     taskList.value = result.records || []
+    
+    // 如果有进行中的任务，启动自动刷新
+    const hasProcessing = taskList.value.some(task => task.status === 0 || task.status === 1)
+    if (hasProcessing && currentTab.value === 1) {
+      startAutoRefresh()
+    } else {
+      stopAutoRefresh()
+    }
   } catch (error) {
     console.error('加载任务列表失败:', error)
   }
+}
+
+// 启动自动刷新
+const startAutoRefresh = () => {
+  if (refreshTimer) return
+  
+  refreshTimer = setInterval(() => {
+    if (currentTab.value === 1) {
+      loadTaskList()
+    }
+  }, 5000) // 每5秒刷新一次
+}
+
+// 停止自动刷新
+const stopAutoRefresh = () => {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = null
+  }
+}
+
+// 点击任务卡片
+const handleTaskClick = (task) => {
+  if (task.status === 2 && task.videoUrl) {
+    // 已完成且有视频，显示播放器
+    currentVideo.value = task
+    showVideoModal.value = true
+  } else if (task.status === 3) {
+    // 失败，显示错误信息
+    uni.showModal({
+      title: '生成失败',
+      content: task.errorMsg || '视频生成失败，积分已退回',
+      showCancel: false
+    })
+  } else {
+    // 进行中，显示进度
+    uni.showToast({
+      title: getStatusText(task.status) + (task.progress ? ` ${task.progress}%` : ''),
+      icon: 'none'
+    })
+  }
+}
+
+// 关闭视频播放器
+const closeVideoModal = () => {
+  showVideoModal.value = false
+  currentVideo.value = null
 }
 
 // 获取状态文本
@@ -346,10 +473,27 @@ const formatTime = (time) => {
   return date.toLocaleDateString()
 }
 
+// 监听tab切换
+const handleTabChange = (tab) => {
+  currentTab.value = tab
+  if (tab === 1) {
+    // 切换到历史记录，加载任务列表
+    loadTaskList()
+  } else {
+    // 切换到输入参数，停止自动刷新
+    stopAutoRefresh()
+  }
+}
+
 onMounted(() => {
   if (userStore.hasLogin) {
     loadTaskList()
   }
+})
+
+// 组件卸载时清理定时器
+onUnmounted(() => {
+  stopAutoRefresh()
 })
 </script>
 
@@ -508,14 +652,92 @@ onMounted(() => {
 .history-list {
   .history-item {
     display: flex;
-    justify-content: space-between;
-    padding: 30rpx;
+    gap: 20rpx;
+    padding: 20rpx;
     background: #1a1a1a;
     border-radius: 16rpx;
     margin-bottom: 20rpx;
+    transition: all 0.3s ease;
+    
+    &:active {
+      opacity: 0.8;
+      transform: scale(0.98);
+    }
+    
+    .task-preview {
+      position: relative;
+      width: 160rpx;
+      height: 160rpx;
+      flex-shrink: 0;
+      border-radius: 12rpx;
+      overflow: hidden;
+      background: #2a2a2a;
+      
+      .preview-image {
+        width: 100%;
+        height: 100%;
+      }
+      
+      .preview-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        
+        .placeholder-icon {
+          font-size: 60rpx;
+        }
+      }
+      
+      .status-badge {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 8rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8rpx;
+        font-size: 20rpx;
+        backdrop-filter: blur(10rpx);
+        
+        &.processing {
+          background: rgba(59, 130, 246, 0.9);
+          color: #fff;
+        }
+        
+        &.completed {
+          background: rgba(16, 185, 129, 0.9);
+          color: #fff;
+          
+          .badge-icon {
+            font-size: 24rpx;
+          }
+        }
+        
+        &.failed {
+          background: rgba(239, 68, 68, 0.9);
+          color: #fff;
+        }
+        
+        .badge-text {
+          font-weight: bold;
+        }
+        
+        .badge-progress {
+          font-weight: bold;
+        }
+      }
+    }
     
     .task-info {
       flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-width: 0;
       
       .task-prompt {
         font-size: 28rpx;
@@ -523,7 +745,9 @@ onMounted(() => {
         margin-bottom: 10rpx;
         overflow: hidden;
         text-overflow: ellipsis;
-        white-space: nowrap;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
       }
       
       .task-meta {
@@ -550,12 +774,20 @@ onMounted(() => {
           color: #999;
         }
       }
+      
+      .task-duration {
+        font-size: 24rpx;
+        color: #999;
+        margin-top: 4rpx;
+      }
     }
     
     .task-credits {
       color: #00d9a3;
       font-size: 28rpx;
       font-weight: bold;
+      white-space: nowrap;
+      align-self: flex-start;
     }
   }
   
@@ -566,6 +798,105 @@ onMounted(() => {
     .empty-text {
       font-size: 28rpx;
       color: #666;
+    }
+  }
+}
+
+// 视频播放模态框
+.video-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.video-modal-container {
+  width: 90%;
+  max-width: 800rpx;
+  background: #1a1a1a;
+  border-radius: 24rpx;
+  overflow: hidden;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100rpx);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.video-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30rpx 40rpx;
+  border-bottom: 2rpx solid #333;
+  
+  .video-modal-title {
+    font-size: 32rpx;
+    font-weight: bold;
+    color: #fff;
+  }
+  
+  .video-modal-close {
+    font-size: 60rpx;
+    color: #999;
+    line-height: 40rpx;
+    cursor: pointer;
+    
+    &:active {
+      opacity: 0.7;
+    }
+  }
+}
+
+.video-modal-content {
+  padding: 20rpx;
+  
+  .video-player {
+    width: 100%;
+    height: 400rpx;
+    border-radius: 16rpx;
+    background: #000;
+  }
+  
+  .video-info {
+    padding: 30rpx 20rpx;
+    
+    .video-prompt {
+      font-size: 28rpx;
+      color: #fff;
+      line-height: 1.6;
+      margin-bottom: 20rpx;
+      display: block;
+    }
+    
+    .video-meta {
+      display: flex;
+      gap: 30rpx;
+      font-size: 24rpx;
+      color: #999;
     }
   }
 }
