@@ -1,6 +1,7 @@
 package com.skycanvas.controller;
 
 import com.skycanvas.common.Result;
+import com.skycanvas.context.UserContextHolder;
 import com.skycanvas.dto.LoginRequest;
 import com.skycanvas.dto.PhoneBindRequest;
 import com.skycanvas.dto.UserInfoDTO;
@@ -39,7 +40,8 @@ public class AuthController {
      * 获取当前用户信息
      */
     @GetMapping("/userinfo")
-    public Result<UserInfoDTO> getUserInfo(@RequestAttribute("userId") Long userId) {
+    public Result<UserInfoDTO> getUserInfo() {
+        Long userId = UserContextHolder.requireUserId();
         log.info("获取用户信息: userId={}", userId);
         UserInfoDTO userInfo = userService.getUserInfo(userId);
         return Result.success(userInfo);
@@ -49,9 +51,8 @@ public class AuthController {
      * 更新用户信息
      */
     @PutMapping("/userinfo")
-    public Result<Void> updateUserInfo(
-            @RequestAttribute("userId") Long userId,
-            @RequestBody @Validated UserUpdateRequest request) {
+    public Result<Void> updateUserInfo(@RequestBody @Validated UserUpdateRequest request) {
+        Long userId = UserContextHolder.requireUserId();
         log.info("更新用户信息: userId={}", userId);
         userService.updateUserInfo(userId, request);
         return Result.success();
@@ -83,9 +84,8 @@ public class AuthController {
      * 绑定手机号
      */
     @PostMapping("/phone/bind")
-    public Result<Void> bindPhone(
-            @RequestAttribute("userId") Long userId,
-            @RequestBody @Validated PhoneBindRequest request) {
+    public Result<Void> bindPhone(@RequestBody @Validated PhoneBindRequest request) {
+        Long userId = UserContextHolder.requireUserId();
         log.info("绑定手机号: userId={}", userId);
         userService.bindPhone(userId, request);
         return Result.success();
@@ -95,7 +95,8 @@ public class AuthController {
      * 刷新Token
      */
     @PostMapping("/token/refresh")
-    public Result<UserInfoDTO> refreshToken(@RequestAttribute("userId") Long userId) {
+    public Result<UserInfoDTO> refreshToken() {
+        Long userId = UserContextHolder.requireUserId();
         log.info("刷新Token: userId={}", userId);
         UserInfoDTO userInfo = userService.getUserInfo(userId);
         return Result.success(userInfo);

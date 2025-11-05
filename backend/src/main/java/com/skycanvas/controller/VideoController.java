@@ -2,6 +2,7 @@ package com.skycanvas.controller;
 
 import com.skycanvas.common.PageResult;
 import com.skycanvas.common.Result;
+import com.skycanvas.context.UserContextHolder;
 import com.skycanvas.dto.VideoGenerationRequest;
 import com.skycanvas.dto.VideoTaskDTO;
 import com.skycanvas.entity.VideoTask;
@@ -26,10 +27,8 @@ public class VideoController {
      * 提交视频生成任务
      */
     @PostMapping("/generate")
-    public Result<VideoTaskDTO> generateVideo(
-            @RequestBody @Validated VideoGenerationRequest request,
-            @RequestAttribute("userId") Long userId) {
-        
+    public Result<VideoTaskDTO> generateVideo(@RequestBody @Validated VideoGenerationRequest request) {
+        Long userId = UserContextHolder.requireUserId();
         log.info("用户{}提交视频生成任务: {}", userId, request.getPrompt());
         VideoTaskDTO task = videoTaskService.createTask(request, userId);
         return Result.success("任务提交成功", task);
@@ -39,10 +38,8 @@ public class VideoController {
      * 查询任务状态
      */
     @GetMapping("/task/{taskId}")
-    public Result<VideoTaskDTO> queryTask(
-            @PathVariable Long taskId,
-            @RequestAttribute("userId") Long userId) {
-        
+    public Result<VideoTaskDTO> queryTask(@PathVariable Long taskId) {
+        Long userId = UserContextHolder.requireUserId();
         VideoTaskDTO task = videoTaskService.queryTask(taskId, userId);
         return Result.success(task);
     }
@@ -53,9 +50,8 @@ public class VideoController {
     @GetMapping("/tasks")
     public Result<PageResult<VideoTask>> getMyTasks(
             @RequestParam(defaultValue = "1") Long current,
-            @RequestParam(defaultValue = "10") Long size,
-            @RequestAttribute("userId") Long userId) {
-        
+            @RequestParam(defaultValue = "10") Long size) {
+        Long userId = UserContextHolder.requireUserId();
         PageResult<VideoTask> result = videoTaskService.getUserTasks(userId, current, size);
         return Result.success(result);
     }

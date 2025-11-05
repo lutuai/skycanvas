@@ -2,6 +2,7 @@ package com.skycanvas.controller;
 
 import com.skycanvas.common.PageResult;
 import com.skycanvas.common.Result;
+import com.skycanvas.context.UserContextHolder;
 import com.skycanvas.entity.CreditLog;
 import com.skycanvas.service.CreditService;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +24,8 @@ public class CreditController {
      * 获取积分余额
      */
     @GetMapping("/balance")
-    public Result<Integer> getBalance(@RequestAttribute("userId") Long userId) {
+    public Result<Integer> getBalance() {
+        Long userId = UserContextHolder.requireUserId();
         Integer balance = creditService.getBalance(userId);
         return Result.success(balance);
     }
@@ -34,9 +36,8 @@ public class CreditController {
     @GetMapping("/logs")
     public Result<PageResult<CreditLog>> getLogs(
             @RequestParam(defaultValue = "1") Long current,
-            @RequestParam(defaultValue = "20") Long size,
-            @RequestAttribute("userId") Long userId) {
-        
+            @RequestParam(defaultValue = "20") Long size) {
+        Long userId = UserContextHolder.requireUserId();
         PageResult<CreditLog> result = creditService.getCreditLogs(userId, current, size);
         return Result.success(result);
     }

@@ -8,9 +8,14 @@ const BASE_URL = process.env.NODE_ENV === 'development'
 
 /**
  * 请求拦截器
+ * 
+ * 职责：
+ * 1. 自动在请求头中添加 JWT Token
+ * 2. 后端通过 Token 识别用户身份，无需前端传递 userId
+ * 3. 保证安全性：用户ID由后端从 Token 中解析，防止伪造
  */
 function requestInterceptor(config) {
-  // 添加token
+  // 添加 JWT Token 到请求头
   const token = uni.getStorageSync('token')
   if (token) {
     config.header = config.header || {}

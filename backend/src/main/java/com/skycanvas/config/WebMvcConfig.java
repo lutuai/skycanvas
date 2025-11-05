@@ -18,10 +18,10 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authInterceptor)
-                .addPathPatterns("/api/**")
+                .addPathPatterns("/**")
                 .excludePathPatterns(
-                        "/api/auth/login",    // 登录接口不需要认证
-                        "/api/ws/**"          // WebSocket不需要认证
+                        "/auth/login",    // 登录接口不需要认证
+                        "/ws/**"          // WebSocket不需要认证
                 );
     }
 }
