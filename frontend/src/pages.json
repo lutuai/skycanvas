@@ -60,6 +60,22 @@
         "navigationBarBackgroundColor": "#1a1a1a",
         "navigationBarTextStyle": "white"
       }
+    },
+    {
+      "path": "pages/login/index",
+      "style": {
+        "navigationBarTitleText": "登录",
+        "navigationBarBackgroundColor": "#1a1a1a",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/profile/edit",
+      "style": {
+        "navigationBarTitleText": "编辑资料",
+        "navigationBarBackgroundColor": "#1a1a1a",
+        "navigationBarTextStyle": "white"
+      }
     }
   ],
   "tabBar": {

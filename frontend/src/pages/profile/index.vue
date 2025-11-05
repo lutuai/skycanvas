@@ -91,17 +91,36 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
 
 const userInfo = computed(() => userStore.userInfo)
 
+// 监听登录成功事件
+let loginSuccessListener = null
+
 // 刷新用户信息
 onMounted(() => {
   if (userStore.hasLogin) {
     userStore.loadUserInfo()
+  }
+  
+  // 监听登录成功事件，自动刷新页面
+  loginSuccessListener = () => {
+    console.log('监听到登录成功，刷新用户信息')
+    if (userStore.hasLogin) {
+      userStore.loadUserInfo()
+    }
+  }
+  uni.$on('userLoginSuccess', loginSuccessListener)
+})
+
+onUnmounted(() => {
+  // 移除事件监听
+  if (loginSuccessListener) {
+    uni.$off('userLoginSuccess', loginSuccessListener)
   }
 })
 
@@ -174,12 +193,11 @@ const handleContact = () => {
 }
 
 // 登录
-const handleLogin = async () => {
-  try {
-    await userStore.login()
-  } catch (error) {
-    console.error('登录失败:', error)
-  }
+const handleLogin = () => {
+  // 跳转到登录页面
+  uni.navigateTo({
+    url: '/pages/login/index'
+  })
 }
 
 // 退出登录

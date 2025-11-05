@@ -78,22 +78,46 @@ public class UserService {
         boolean isNewUser = false;
         
         if (user == null) {
-            user = createUser(openid, request.getNickname(), request.getAvatar());
-            isNewUser = true;
-        } else {
+            // 尝试创建新用户，处理并发情况下的重复插入
+            try {
+                user = createUser(openid, request.getNickname(), request.getAvatar());
+                isNewUser = true;
+            } catch (Exception e) {
+                // 如果插入失败（可能是并发导致的重复键冲突），重新查询用户
+                if (e.getMessage() != null && e.getMessage().contains("Duplicate entry")) {
+                    log.warn("并发创建用户，重新查询: openid={}", openid);
+                    user = getUserByOpenid(openid);
+                    if (user == null) {
+                        // 如果仍然查询不到，抛出原始异常
+                        throw e;
+                    }
+                } else {
+                    throw e;
+                }
+            }
+        }
+        
+        if (user != null) {
             // 检查用户状态
             if (user.getStatus() == 1) {
                 throw BusinessException.of(403, "账号已被禁用，请联系客服");
             }
             
-            // 更新用户信息
-            if (request.getNickname() != null && !request.getNickname().equals(user.getNickname())) {
-                user.setNickname(request.getNickname());
+            // 更新用户信息（仅在非新用户时）
+            if (!isNewUser) {
+                boolean needUpdate = false;
+                if (request.getNickname() != null && !request.getNickname().equals(user.getNickname())) {
+                    user.setNickname(request.getNickname());
+                    needUpdate = true;
+                }
+                if (request.getAvatar() != null && !request.getAvatar().equals(user.getAvatar())) {
+                    user.setAvatar(request.getAvatar());
+                    needUpdate = true;
+                }
+                if (needUpdate) {
+                    userMapper.updateById(user);
+                }
             }
-            if (request.getAvatar() != null && !request.getAvatar().equals(user.getAvatar())) {
-                user.setAvatar(request.getAvatar());
-            }
-            userMapper.updateById(user);
         }
 
         // 3. 生成JWT Token
@@ -331,6 +355,68 @@ public class UserService {
         }
     }
 
+    /**
+     * 手机号验证码登录
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public UserInfoDTO loginByPhone(PhoneBindRequest request) {
+        // 1. 验证验证码
+        String codeKey = "sms:code:" + request.getPhone();
+        String cachedCode = (String) redisUtils.get(codeKey);
+        
+        if (cachedCode == null) {
+            loginLogService.recordLoginFail(null, "验证码已过期");
+            throw BusinessException.of("验证码已过期，请重新获取");
+        }
+        
+        if (!cachedCode.equals(request.getCode())) {
+            loginLogService.recordLoginFail(null, "验证码错误");
+            throw BusinessException.of("验证码错误");
+        }
+        
+        // 2. 查询或创建用户（通过手机号）
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(User::getPhone, request.getPhone());
+        User user = userMapper.selectOne(wrapper);
+        
+        boolean isNewUser = false;
+        if (user == null) {
+            // 创建新用户，使用手机号作为openid
+            String phoneOpenid = "phone_" + request.getPhone();
+            user = createUser(phoneOpenid, "用户" + request.getPhone().substring(7), null);
+            user.setPhone(request.getPhone());
+            userMapper.updateById(user);
+            isNewUser = true;
+        }
+        
+        // 检查用户状态
+        if (user.getStatus() == 1) {
+            loginLogService.recordLoginFail(user.getId(), "账号已被禁用");
+            throw BusinessException.of(403, "账号已被禁用，请联系客服");
+        }
+        
+        // 3. 生成JWT Token
+        String token = jwtUtils.generateToken(user.getId());
+        
+        // 4. 缓存用户信息
+        cacheUserInfo(user);
+        
+        // 5. 清除验证码
+        redisUtils.delete(codeKey);
+        
+        // 6. 构建返回对象
+        UserInfoDTO dto = new UserInfoDTO();
+        BeanUtils.copyProperties(user, dto);
+        dto.setToken(token);
+        
+        // 记录登录日志
+        log.info("手机号登录成功: userId={}, phone={}, isNewUser={}", 
+                user.getId(), request.getPhone(), isNewUser);
+        loginLogService.recordLoginSuccess(user.getId());
+        
+        return dto;
+    }
+    
     /**
      * 检查用户是否存在
      */

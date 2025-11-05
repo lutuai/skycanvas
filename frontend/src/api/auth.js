@@ -45,3 +45,10 @@ export function refreshToken() {
   return post('/auth/token/refresh')
 }
 
+/**
+ * 手机号验证码登录
+ */
+export function loginByPhone(data) {
+  return post('/auth/login/phone', data)
+}
+

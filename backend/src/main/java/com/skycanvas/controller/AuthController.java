@@ -66,7 +66,17 @@ public class AuthController {
             @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确") String phone) {
         log.info("发送短信验证码: phone={}", phone);
         userService.sendSmsCode(phone);
-        return Result.success();
+        return Result.success("验证码已发送");
+    }
+    
+    /**
+     * 手机号验证码登录
+     */
+    @PostMapping("/login/phone")
+    public Result<UserInfoDTO> loginByPhone(@RequestBody @Validated PhoneBindRequest request) {
+        log.info("手机号验证码登录: phone={}", request.getPhone());
+        UserInfoDTO userInfo = userService.loginByPhone(request);
+        return Result.success(userInfo);
     }
 
     /**

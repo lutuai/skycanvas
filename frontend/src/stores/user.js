@@ -7,7 +7,8 @@ import {
   getUserInfo as getUserInfoApi,
   updateUserInfo as updateUserInfoApi,
   bindPhone as bindPhoneApi,
-  sendSmsCode as sendSmsCodeApi
+  sendSmsCode as sendSmsCodeApi,
+  loginByPhone as loginByPhoneApi
 } from '@/api/auth'
 
 export const useUserStore = defineStore('user', {
@@ -147,24 +148,59 @@ export const useUserStore = defineStore('user', {
     },
     
     /**
+     * 手机号验证码登录
+     */
+    async loginByPhoneCode(phone, code, showToast = true) {
+      try {
+        const data = await loginByPhoneApi({
+          phone,
+          code
+        })
+        
+        // 保存登录信息
+        this.saveLoginData(data, showToast)
+        return data
+      } catch (error) {
+        console.error('手机号登录失败:', error)
+        if (showToast) {
+          uni.showToast({
+            title: error.message || '登录失败',
+            icon: 'none'
+          })
+        }
+        throw error
+      }
+    },
+    
+    /**
      * 保存登录数据
      */
     saveLoginData(data, showToast = true) {
+      // 确保响应式更新
       this.token = data.token
-      this.userInfo = data
+      this.userInfo = { ...data }  // 使用展开运算符确保响应式
       this.isLogin = true
+      this.loginChecked = true
       
+      // 持久化存储
       uni.setStorageSync('token', data.token)
       uni.setStorageSync('userInfo', data)
       
+      // 显示提示
       if (showToast) {
-        const welcomeMsg = data.credits > 0 ? `欢迎回来！您有 ${data.credits} 积分` : '登录成功'
+        const welcomeMsg = data.credits > 0 ? `欢迎！您有 ${data.credits} 积分` : '登录成功'
         uni.showToast({
           title: welcomeMsg,
           icon: 'success',
           duration: 2000
         })
       }
+      
+      // 延迟刷新页面，确保状态已更新
+      setTimeout(() => {
+        // 触发页面刷新
+        uni.$emit('userLoginSuccess')
+      }, 100)
     },
     
     /**
@@ -173,13 +209,16 @@ export const useUserStore = defineStore('user', {
     async loadUserInfo() {
       try {
         const data = await getUserInfoApi()
-        this.userInfo = data
+        // 确保响应式更新
+        this.userInfo = { ...data }
         this.isLogin = true
         uni.setStorageSync('userInfo', data)
         return data
       } catch (error) {
         console.error('加载用户信息失败:', error)
+        // token可能已过期，清除登录状态
         this.logout()
+        throw error
       }
     },
     
@@ -210,8 +249,11 @@ export const useUserStore = defineStore('user', {
         })
         
         if (confirm) {
-          await this.login()
-          return true
+          // 跳转到登录页面
+          uni.navigateTo({
+            url: '/pages/login/index'
+          })
+          return false
         }
         return false
       }
