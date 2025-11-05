@@ -46,10 +46,10 @@
             />
             <button 
               class="btn-code"
-              :disabled="codeSending || countdown > 0"
+              :disabled="!canSendCode"
               @click="handleSendCode"
             >
-              {{ countdown > 0 ? `${countdown}秒后重试` : '获取验证码' }}
+              {{ countdown > 0 ? `${countdown}秒后重试` : codeSending ? '发送中...' : '获取验证码' }}
             </button>
           </view>
         </view>
@@ -120,6 +120,14 @@ const codeSending = ref(false)
 const countdown = ref(0)
 const loggingIn = ref(false)
 
+// 计算属性：是否可以发送验证码
+const canSendCode = computed(() => {
+  // 手机号格式正确，且未在发送中，且不在倒计时中
+  return /^1[3-9]\d{9}$/.test(phone.value) && 
+         !codeSending.value && 
+         countdown.value === 0
+})
+
 // 计算属性：是否可以登录
 const canLogin = computed(() => {
   // 手机号和验证码都不为空，且未在登录中
@@ -181,18 +189,25 @@ const handlePhoneLogin = async () => {
     loggingIn.value = true
     await userStore.loginByPhoneCode(phone.value, code.value)
     
-    // 登录成功，返回上一页或首页
+    // 登录成功，延迟跳转（等待Toast显示）
     setTimeout(() => {
-      uni.navigateBack({
-        fail: () => {
-          uni.switchTab({
-            url: '/pages/index/index'
-          })
-        }
-      })
-    }, 1500)
+      // 尝试返回上一页
+      const pages = getCurrentPages()
+      if (pages.length > 1) {
+        // 有上一页，返回
+        uni.navigateBack({
+          delta: 1
+        })
+      } else {
+        // 没有上一页，跳转到个人中心
+        uni.switchTab({
+          url: '/pages/profile/index'
+        })
+      }
+    }, 500)
   } catch (error) {
     console.error('登录失败:', error)
+    // 错误信息已在 userStore 中显示
   } finally {
     loggingIn.value = false
   }
@@ -343,11 +358,14 @@ const showAgreement = (type) => {
       color: var(--primary-color);
       border-radius: 12rpx;
       font-size: 24rpx;
+      transition: all 0.3s;
       
       &:disabled {
-        opacity: 0.5;
+        opacity: 0.4;
         border-color: #666;
         color: #666;
+        cursor: not-allowed;
+        background: transparent;
       }
     }
   }
