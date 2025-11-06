@@ -70,25 +70,36 @@
       <!-- 快速登录 -->
       <view v-else class="login-form">
         <!-- #ifdef MP-WEIXIN -->
+        <view class="info-tips">
+          <text class="info-icon">ℹ️</text>
+          <text class="info-text">您已自动登录，可完善微信资料获得更好体验</text>
+        </view>
         <button 
           class="btn-primary btn-login"
           :disabled="loggingIn"
           @click="handleWeixinLogin"
         >
-          <text>{{ loggingIn ? '登录中...' : '微信一键登录' }}</text>
+          <text>{{ loggingIn ? '更新中...' : '完善微信资料' }}</text>
         </button>
+        <view class="tips">
+          <text>授权后将同步您的微信昵称和头像</text>
+        </view>
         <!-- #endif -->
 
         <!-- #ifdef H5 -->
+        <view class="info-tips">
+          <text class="info-icon">ℹ️</text>
+          <text class="info-text">H5环境已自动创建游客账号</text>
+        </view>
         <button 
           class="btn-primary btn-login"
           :disabled="loggingIn"
           @click="handleH5Login"
         >
-          <text>{{ loggingIn ? '登录中...' : '游客登录' }}</text>
+          <text>{{ loggingIn ? '登录中...' : '重新登录' }}</text>
         </button>
         <view class="tips">
-          <text>H5环境使用设备ID登录</text>
+          <text>使用设备ID自动登录，可通过手机号登录绑定账号</text>
         </view>
         <!-- #endif -->
       </view>
@@ -107,6 +118,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useUserStore } from '@/stores/user'
+import { showCustomModal } from '@/utils/modal'
 
 const userStore = useUserStore()
 
@@ -213,13 +225,18 @@ const handlePhoneLogin = async () => {
   }
 }
 
-// 微信登录
+// 微信登录（完善资料）
 const handleWeixinLogin = async () => {
   try {
     loggingIn.value = true
     await userStore.loginByWeixin()
     
-    // 登录成功，延迟跳转
+    uni.showToast({
+      title: '资料更新成功',
+      icon: 'success'
+    })
+    
+    // 延迟跳转
     setTimeout(() => {
       const pages = getCurrentPages()
       if (pages.length > 1) {
@@ -233,7 +250,11 @@ const handleWeixinLogin = async () => {
       }
     }, 500)
   } catch (error) {
-    console.error('微信登录失败:', error)
+    console.error('完善资料失败:', error)
+    uni.showToast({
+      title: '操作失败',
+      icon: 'none'
+    })
   } finally {
     loggingIn.value = false
   }
@@ -266,8 +287,8 @@ const handleH5Login = async () => {
 }
 
 // 显示协议
-const showAgreement = (type) => {
-  uni.showModal({
+const showAgreement = async (type) => {
+  await showCustomModal({
     title: type === 'user' ? '用户协议' : '隐私政策',
     content: '这里是协议内容...',
     showCancel: false
@@ -408,6 +429,29 @@ const showAgreement = (type) => {
   .link {
     color: var(--primary-color);
     margin: 0 5rpx;
+  }
+}
+
+.info-tips {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+  padding: 24rpx 30rpx;
+  background: rgba(0, 217, 163, 0.1);
+  border: 2rpx solid rgba(0, 217, 163, 0.3);
+  border-radius: 12rpx;
+  margin-bottom: 30rpx;
+  
+  .info-icon {
+    font-size: 32rpx;
+    flex-shrink: 0;
+  }
+  
+  .info-text {
+    font-size: 24rpx;
+    color: var(--primary-color);
+    line-height: 1.5;
   }
 }
 

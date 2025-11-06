@@ -97,6 +97,7 @@
 import { computed, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { getUserAvatar } from '@/utils/avatar'
+import { showCustomModal } from '@/utils/modal'
 
 const userStore = useUserStore()
 
@@ -197,8 +198,8 @@ const goEditProfile = async () => {
 }
 
 // 关于我们
-const handleAbout = () => {
-  uni.showModal({
+const handleAbout = async () => {
+  await showCustomModal({
     title: '关于SkyCanvas',
     content: 'SkyCanvas是一款基于AI技术的视频生成平台，让创作变得更简单。',
     showCancel: false
@@ -206,8 +207,8 @@ const handleAbout = () => {
 }
 
 // 联系客服
-const handleContact = () => {
-  uni.showModal({
+const handleContact = async () => {
+  await showCustomModal({
     title: '联系客服',
     content: '客服微信：skycanvas_support',
     showCancel: false
@@ -223,20 +224,19 @@ const handleLogin = () => {
 }
 
 // 退出登录
-const handleLogout = () => {
-  uni.showModal({
+const handleLogout = async () => {
+  const confirm = await showCustomModal({
     title: '确认退出',
-    content: '确定要退出登录吗？',
-    success: (res) => {
-      if (res.confirm) {
-        userStore.logout()
-        uni.showToast({
-          title: '已退出登录',
-          icon: 'success'
-        })
-      }
-    }
+    content: '确定要退出登录吗？'
   })
+  
+  if (confirm) {
+    userStore.logout()
+    uni.showToast({
+      title: '已退出登录',
+      icon: 'success'
+    })
+  }
 }
 </script>
 

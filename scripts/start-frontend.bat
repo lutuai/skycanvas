@@ -54,8 +54,9 @@ echo.
 echo 请选择启动方式：
 echo   1. H5 (推荐，浏览器访问)
 echo   2. 微信小程序 (需要微信开发者工具)
+echo   3. 同时启动 H5 和小程序 (推荐开发调试)
 echo.
-set /p choice=请输入选择 (1 或 2): 
+set /p choice=请输入选择 (1, 2 或 3): 
 
 if "%choice%"=="1" (
     echo.
@@ -71,6 +72,32 @@ if "%choice%"=="1" (
     echo.
     call npm run dev:mp-weixin
     pause
+) else if "%choice%"=="3" (
+    echo.
+    echo ====================================
+    echo 同时启动 H5 和小程序版本
+    echo ====================================
+    echo.
+    echo [H5] 将在新窗口启动，访问地址: http://localhost:3000
+    echo [小程序] 将在当前窗口编译，编译完成后用微信开发者工具打开
+    echo 目录: %cd%\dist\dev\mp-weixin
+    echo.
+    echo 提示: 关闭此窗口不会关闭 H5 服务，请手动关闭 H5 窗口
+    echo.
+    pause
+    
+    REM 在新窗口启动 H5
+    start "SkyCanvas H5 服务" cmd /k "echo 正在启动 H5 服务... && echo 访问地址: http://localhost:3000 && echo. && npm run dev:h5"
+    
+    REM 等待1秒让H5先启动
+    timeout /t 1 /nobreak >nul
+    
+    REM 在当前窗口启动小程序编译
+    echo.
+    echo 正在编译小程序版本...
+    echo.
+    call npm run dev:mp-weixin
+    
 ) else (
     echo 无效选择，默认启动H5...
     call npm run dev:h5

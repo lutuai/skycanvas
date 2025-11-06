@@ -35,8 +35,9 @@ echo
 echo "请选择启动方式："
 echo "  1. H5 (推荐，浏览器访问)"
 echo "  2. 微信小程序 (需要微信开发者工具)"
+echo "  3. 同时启动 H5 和小程序 (推荐开发调试)"
 echo
-read -p "请输入选择 (1 或 2): " choice
+read -p "请输入选择 (1, 2 或 3): " choice
 
 if [ "$choice" = "1" ]; then
     echo
@@ -51,6 +52,42 @@ elif [ "$choice" = "2" ]; then
     echo "目录: $(pwd)/dist/dev/mp-weixin"
     echo
     npm run dev:mp-weixin
+elif [ "$choice" = "3" ]; then
+    echo
+    echo "===================================="
+    echo "同时启动 H5 和小程序版本"
+    echo "===================================="
+    echo
+    echo "[H5] 后台启动中，访问地址: http://localhost:3000"
+    echo "[小程序] 将在前台编译，编译完成后用微信开发者工具打开"
+    echo "目录: $(pwd)/dist/dev/mp-weixin"
+    echo
+    
+    # 创建日志目录
+    mkdir -p logs
+    
+    # 后台启动 H5
+    echo "正在后台启动 H5 服务..."
+    nohup npm run dev:h5 > logs/h5.log 2>&1 &
+    H5_PID=$!
+    echo "✅ H5 服务已启动 (PID: $H5_PID)"
+    echo "日志文件: $(pwd)/logs/h5.log"
+    
+    # 等待1秒让H5先启动
+    sleep 1
+    
+    # 前台启动小程序编译
+    echo
+    echo "正在编译小程序版本..."
+    echo "提示: 按 Ctrl+C 停止小程序编译，H5 服务会继续运行"
+    echo "停止 H5 服务命令: kill $H5_PID"
+    echo
+    
+    # 保存 PID 到文件
+    echo $H5_PID > logs/h5.pid
+    
+    npm run dev:mp-weixin
+    
 else
     echo "无效选择，默认启动H5..."
     npm run dev:h5

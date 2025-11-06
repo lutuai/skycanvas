@@ -1,8 +1,12 @@
-<template></template>
+<template>
+  <!-- 全局自定义深色弹窗组件 -->
+  <CustomModal />
+</template>
 
 <script setup>
 import { onLaunch, onShow, onHide } from '@dcloudio/uni-app'
 import { useUserStore } from '@/stores/user'
+import CustomModal from '@/components/CustomModal.vue'
 
 onLaunch(() => {
   console.log('App Launch')

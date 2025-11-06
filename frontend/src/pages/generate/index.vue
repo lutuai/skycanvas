@@ -216,6 +216,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { generateVideo, getMyTasks } from '@/api/video'
 import { getBalance } from '@/api/credit'
+import { showCustomModal } from '@/utils/modal'
 
 const userStore = useUserStore()
 
@@ -328,18 +329,17 @@ const handleGenerate = async () => {
   // 检查积分
   const balance = await getBalance()
   if (balance < requiredCredits.value) {
-    uni.showModal({
+    const confirm = await showCustomModal({
       title: '积分不足',
       content: `当前积分：${balance}，需要：${requiredCredits.value}`,
-      confirmText: '去充值',
-      success: (res) => {
-        if (res.confirm) {
-          uni.navigateTo({
-            url: '/pages/credit/recharge'
-          })
-        }
-      }
+      confirmText: '去充值'
     })
+    
+    if (confirm) {
+      uni.navigateTo({
+        url: '/pages/credit/recharge'
+      })
+    }
     return
   }
 
@@ -349,17 +349,16 @@ const handleGenerate = async () => {
     const result = await generateVideo(formData.value)
     
     // 显示成功提示，引导用户查看历史记录
-    uni.showModal({
+    await showCustomModal({
       title: '任务提交成功',
       content: '视频正在生成中，请到"历史记录"查看进度和结果',
       showCancel: false,
-      confirmText: '去查看',
-      success: () => {
-        // 切换到历史记录
-        currentTab.value = 1
-        loadTaskList()
-      }
+      confirmText: '去查看'
     })
+    
+    // 切换到历史记录
+    currentTab.value = 1
+    loadTaskList()
     
     // 清空表单
     formData.value = {
@@ -421,14 +420,14 @@ const stopAutoRefresh = () => {
 }
 
 // 点击任务卡片
-const handleTaskClick = (task) => {
+const handleTaskClick = async (task) => {
   if (task.status === 2 && task.videoUrl) {
     // 已完成且有视频，显示播放器
     currentVideo.value = task
     showVideoModal.value = true
   } else if (task.status === 3) {
     // 失败，显示错误信息
-    uni.showModal({
+    await showCustomModal({
       title: '生成失败',
       content: task.errorMsg || '视频生成失败，积分已退回',
       showCancel: false

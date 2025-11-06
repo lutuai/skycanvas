@@ -126,6 +126,8 @@ const goGenerate = () => {
 // ==================== Hero 区域 ====================
 .hero-section {
   padding: 60rpx 32rpx 80rpx;
+  padding-top: calc(60rpx + env(safe-area-inset-top));
+  padding-top: calc(60rpx + var(--status-bar-height));
   position: relative;
   z-index: 1;
 }

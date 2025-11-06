@@ -11,6 +11,7 @@ import {
   loginByPhone as loginByPhoneApi
 } from '@/api/auth'
 import { getUserAvatar } from '@/utils/avatar'
+import { showCustomModal } from '@/utils/modal'
 
 export const useUserStore = defineStore('user', {
   state: () => {
@@ -51,11 +52,28 @@ export const useUserStore = defineStore('user', {
       
       this.loginChecked = true
       
-      // 如果没有token，标记为未登录状态
+      // 如果没有token，尝试静默登录
       if (!this.token) {
-        console.log('没有登录token，跳过自动登录')
-        this.isLogin = false
-        return
+        console.log('没有登录token，尝试自动登录')
+        try {
+          // #ifdef MP-WEIXIN
+          // 小程序环境：静默登录（无需用户授权）
+          await this.silentLoginByWeixin()
+          console.log('小程序静默登录成功')
+          return
+          // #endif
+          
+          // #ifdef H5
+          // H5环境：自动游客登录
+          await this.loginByH5(false)
+          console.log('H5自动登录成功')
+          return
+          // #endif
+        } catch (error) {
+          console.error('自动登录失败:', error)
+          this.isLogin = false
+          return
+        }
       }
       
       // 如果有 token 和 userInfo，先标记为已登录（避免页面闪烁）
@@ -71,8 +89,10 @@ export const useUserStore = defineStore('user', {
         console.log('自动登录验证成功')
       } catch (error) {
         console.error('Token验证失败，可能已过期:', error)
-        // Token失效，清除登录状态
+        // Token失效，清除登录状态并尝试重新登录
         this.logout()
+        // 重新尝试自动登录
+        await this.initLogin()
       }
     },
     
@@ -108,38 +128,70 @@ export const useUserStore = defineStore('user', {
     },
     
     /**
-     * 微信小程序登录
+     * 微信小程序静默登录（不获取用户信息）
+     */
+    async silentLoginByWeixin(showToast = false) {
+      try {
+        // 获取微信code（无需用户授权）
+        const { code } = await uni.login({
+          provider: 'weixin'
+        })
+        
+        // 调用登录接口，使用空的昵称和头像（后端会自动生成）
+        const data = await loginApi({
+          code,
+          nickname: '',
+          avatar: ''
+        })
+        
+        // 保存登录信息
+        this.saveLoginData(data, showToast)
+        return data
+      } catch (error) {
+        console.error('静默登录失败:', error)
+        throw error
+      }
+    },
+    
+    /**
+     * 微信小程序登录（获取用户信息 - 用于完善资料）
      */
     async loginByWeixin(showToast = true) {
-      // 获取微信code
-      const { code } = await uni.login({
-        provider: 'weixin'
-      })
-      
-      // 获取用户信息
-      let nickname = ''
-      let avatar = ''
-      
       try {
-        const { userInfo } = await uni.getUserProfile({
-          desc: '用于完善用户资料'
+        // 获取微信code
+        const { code } = await uni.login({
+          provider: 'weixin'
         })
-        nickname = userInfo.nickName
-        avatar = userInfo.avatarUrl
-      } catch (e) {
-        console.log('用户取消授权')
+        
+        // 获取用户信息（需要用户授权）
+        let nickname = ''
+        let avatar = ''
+        
+        try {
+          const { userInfo } = await uni.getUserProfile({
+            desc: '用于完善用户资料'
+          })
+          nickname = userInfo.nickName
+          avatar = userInfo.avatarUrl
+        } catch (e) {
+          console.log('用户取消授权，使用默认信息')
+          // 用户取消授权，使用空信息（后端会生成默认值）
+        }
+        
+        // 调用登录接口
+        const data = await loginApi({
+          code,
+          nickname,
+          avatar
+        })
+        
+        // 保存登录信息
+        this.saveLoginData(data, showToast)
+        return data
+      } catch (error) {
+        console.error('微信登录失败:', error)
+        throw error
       }
-      
-      // 调用登录接口
-      const data = await loginApi({
-        code,
-        nickname,
-        avatar
-      })
-      
-      // 保存登录信息
-      this.saveLoginData(data, showToast)
-      return data
     },
     
     /**
@@ -260,13 +312,10 @@ export const useUserStore = defineStore('user', {
      */
     async checkLogin() {
       if (!this.hasLogin) {
-        const confirm = await new Promise((resolve) => {
-          uni.showModal({
-            title: '提示',
-            content: '请先登录',
-            confirmText: '去登录',
-            success: (res) => resolve(res.confirm)
-          })
+        const confirm = await showCustomModal({
+          title: '提示',
+          content: '请先登录',
+          confirmText: '去登录'
         })
         
         if (confirm) {

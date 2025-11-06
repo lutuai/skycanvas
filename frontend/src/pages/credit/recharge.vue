@@ -42,6 +42,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { showCustomModal } from '@/utils/modal'
 
 const packages = ref([
   { id: 1, name: '体验套餐', credits: 100, bonusCredits: 0, price: 10 },
@@ -56,12 +57,12 @@ const selectPackage = (pkg) => {
   selectedPackage.value = pkg
 }
 
-const handlePay = () => {
+const handlePay = async () => {
   if (!selectedPackage.value) {
     return
   }
 
-  uni.showModal({
+  await showCustomModal({
     title: '支付提示',
     content: '支付功能开发中，请稍后再试',
     showCancel: false
